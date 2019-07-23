@@ -156,4 +156,83 @@ void token::close( const name& owner, const symbol& symbol )
    acnts.erase( it );
 }
 
+///////////////////////////////////////////////////////////
+
+void token::castcreate( const asset& quantity )
+{
+   require_auth( permission_level{get_self(), "crosschain"_n} );
+
+   auto sym = quantity.symbol;
+   check( sym.is_valid(), "invalid symbol name" );
+   check( quantity.is_valid(), "invalid supply");
+   check( quantity.amount > 0, "quantity must be positive");
+
+   stats statstable( get_self(), sym.code().raw() );
+   auto existing = statstable.find( sym.code().raw() );
+   if ( existing == statstable.end() ) {
+      statstable.emplace( get_self(), [&]( auto& s ) {
+         s.supply.symbol = quantity.symbol;
+         s.max_supply    = quantity;
+         s.issuer        = "eosio"_n;
+      });
+   } else {
+      check( existing->issuer == "eosio"_n, "existed issuer must be 'eosio'" );
+      statstable.modify( existing, same_payer, [&]( auto& s ) {
+         s.max_supply    += quantity;
+      });
+   }
+}
+
+void token::castissue( const name& to, const asset& quantity, const string& memo )
+{
+   auto sym = quantity.symbol;
+   check( sym.is_valid(), "invalid symbol name" );
+   check( memo.size() <= 256, "memo has more than 256 bytes" );
+
+   stats statstable( get_self(), sym.code().raw() );
+   auto existing = statstable.find( sym.code().raw() );
+   check( existing != statstable.end(), "token with symbol does not exist, create token before issue" );
+   const auto& st = *existing;
+   check( to == st.issuer, "tokens can only be issued to issuer account" );
+
+   require_auth( permission_level{st.issuer, "crosschain"_n} );
+   check( quantity.is_valid(), "invalid quantity" );
+   check( quantity.amount > 0, "must issue positive quantity" );
+
+   check( quantity.symbol == st.supply.symbol, "symbol precision mismatch" );
+   check( quantity.amount <= st.max_supply.amount - st.supply.amount, "quantity exceeds available supply");
+
+   statstable.modify( st, same_payer, [&]( auto& s ) {
+      s.supply += quantity;
+   });
+
+   add_balance( st.issuer, quantity, st.issuer );
+}
+
+void token::casttransfer( const name&    from,
+                          const name&    to,
+                          const asset&   quantity,
+                          const string&  memo )
+{
+   check( from != to, "cannot transfer to self" );
+   require_auth( permission_level{from, "crosschain"_n} );
+   check( is_account( to ), "to account does not exist");
+   auto sym = quantity.symbol.code();
+   stats statstable( get_self(), sym.raw() );
+   const auto& st = statstable.get( sym.raw() );
+
+   require_recipient( from );
+   require_recipient( to );
+
+   check( quantity.is_valid(), "invalid quantity" );
+   check( quantity.amount > 0, "must transfer positive quantity" );
+   check( quantity.symbol == st.supply.symbol, "symbol precision mismatch" );
+   check( memo.size() <= 256, "memo has more than 256 bytes" );
+
+   auto payer = has_auth( to ) ? to : from;
+
+   sub_balance( from, quantity );
+   add_balance( to, quantity, payer );
+}
+
 } /// namespace eosio

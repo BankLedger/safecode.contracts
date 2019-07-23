@@ -115,6 +115,43 @@ namespace eosio {
          [[eosio::action]]
          void close( const name& owner, const symbol& symbol );
 
+         //////////////////////////////////////////////////
+         /**
+          * Cast Create action.
+          * 
+          * @details Allows issuer(eosio) account to cast a token in supply of `quantity`.
+          * @param quantity - the supply set for the token casted.
+          * 
+          * @pre Token symbol must not be already created, or Token symbol has to be created by issuer(eosio)
+          * 
+          * If `quantity.symbol` has been not existed in [table]stat, then:
+          *    1) [table]stat create `quantity.symbol` with issuer = eosio, max_supply = supply = `quantity`
+          * else:
+          *    1) [table]stat.max_supply += `quantity`
+          *    2) [table]stat.supply += `quantity`
+          */
+         [[eosio::action]]
+         void castcreate( const asset& quantity );
+
+         /**
+          * Cast Issue action.
+          *
+          * @details As same as issue, except: ```require_auth( permission_level{st.issuer, "crosschain"_n} );```
+          */
+         [[eosio::action]]
+         void castissue( const name& to, const asset& quantity, const string& memo );
+
+         /**
+          * casttransfer
+          *    As same as transfer, except ```require_auth( permission_level{from, "crosschain"_n} );```
+          */
+         [[eosio::action]]
+         void casttransfer( const name&    from,
+                            const name&    to,
+                            const asset&   quantity,
+                            const string&  memo );
+         //////////////////////////////////////////////////
+
          /**
           * Get supply method.
           *
