@@ -168,10 +168,17 @@ void safeoracle::draw_each_asset( type_table__cctx& tbl_cctx, const cctx_key& tx
     action(
         permission_level{"eosio"_n, "crosschain"_n},
         "eosio.token"_n, "castissue"_n,
-        std::make_tuple( to, quantity, 
-                         string("associated with ") + stxkey + "@SAFE; issued by safeoracle::drawassets automatically")
+        std::make_tuple( "eosio"_n, quantity, 
+                         string("associated with ") + stxkey + "@SAFE; castissued by safeoracle::drawassets automatically")
     ).send();
     
+    //transfer assset
+    action(
+        permission_level{"eosio"_n, "crosschain"_n},
+        "eosio.token"_n, "casttransfer"_n,
+        std::make_tuple( "eosio"_n, to, quantity, 
+                         string("associated with ") + stxkey + "@SAFE; casttransfered by safeoracle::drawassets automatically")
+    ).send();
 }
 
 void safeoracle::setchainpos( const struct chain_pos& pos )
