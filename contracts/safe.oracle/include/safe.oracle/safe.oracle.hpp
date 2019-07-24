@@ -7,6 +7,7 @@
 #include <string>
 
 #include "printkit.hpp"
+#include "checkkit.hpp"
 
 namespace eosiosystem {
    class system_contract;

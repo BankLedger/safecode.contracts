@@ -7,35 +7,44 @@
 
 namespace eosio { namespace danX {
 
+void __check(bool pred, const char* file, const char* func, int line, int errcode, const char* msg)
+{
+    if(pred) { return; }
+
+    char    buffer[1024] = {};
+    snprintf(buffer, sizeof(buffer)-1, "%d|%s %s %d|%s",
+                errcode, file, func, line, msg);
+    eosio::check(pred, buffer);
+}
+
+void check(bool pred, const char* file, const char* func, int line, int errcode, const char *fmt, ...)
+{
+    if(pred) { return; }
+
+    char    buffer[512] = {};
+
+	va_list ap;
+	va_start(ap, fmt);
+    vsnprintf(buffer, sizeof(buffer)-1, fmt, ap);
+    va_end(ap);
+
+    __check(pred, file, func, line, errcode, buffer);
+}
+
+
+void check(bool pred, const char* file, const char* func, int line, int errcode, const std::string& str)
+{
+    if(pred) { return; }
+    __check(pred, file, func, line, errcode, str.c_str());
+}
+
 }} //namespace danX, eosio
 
 ////////////////////////////////////////////////////////////
 
-#define CHECK_FMT(pred, code, fmt, args...) ({                      \
-    if(!pred){                                                      \
-        char    msg[1024] = {};                                     \
-        snprintf(msg, sizeof(msg)-1, "%d|%s %s %d|" fmt,            \
-                 code, __FILE__, __FUNCTION__, __LINE__, ##args);   \
-        eosio::check(pred, msg);                                    \
-    }                                                               \
-})
-
-#define CHECK_STR(pred, code, str) ({                               \
-    if(!pred){                                                      \
-        char    msg[1024] = {};                                     \
-        snprintf(msg, sizeof(msg)-1, "%d|%s %s %d|%s", code,        \
-                 __FILE__, __FUNCTION__, __LINE__, str.c_str());    \
-        eosio::check(pred, msg);                                    \
-    }                                                               \
-})
-
-#define CHECK_SZ(pred, code, sz) ({                                 \
-    if(!pred){                                                      \
-        char    msg[1024] = {};                                     \
-        snprintf(msg, sizeof(msg)-1, "%d|%s %s %d|%s", code,        \
-                 __FILE__, __FUNCTION__, __LINE__, sz);             \
-        eosio::check(pred, msg);                                    \
-    }                                                               \
-})
+//(pred, errcode, fmt, args...)
+//(pred, errcode, sz)
+//(pred, errcode, str)
+#define CHECK_MORE(pred, errcode, x, y...) ::eosio::danX::check(pred, __FILE__, __FUNCTION__, __LINE__, errcode, x, ##y);
 
 #endif  //__FILE_CHECKKIT_HPP__
