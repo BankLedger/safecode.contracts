@@ -11,7 +11,7 @@ namespace eosio { namespace danX {
 
 ////////////////////////////////////////////////////////////
 
-#define CHECK_FMT_STR(pred, code, fmt, args...) ({                  \
+#define CHECK_FMT(pred, code, fmt, args...) ({                      \
     if(!pred){                                                      \
         char    msg[1024] = {};                                     \
         snprintf(msg, sizeof(msg)-1, "%d|%s %s %d|" fmt,            \
@@ -25,6 +25,15 @@ namespace eosio { namespace danX {
         char    msg[1024] = {};                                     \
         snprintf(msg, sizeof(msg)-1, "%d|%s %s %d|%s", code,        \
                  __FILE__, __FUNCTION__, __LINE__, str.c_str());    \
+        eosio::check(pred, msg);                                    \
+    }                                                               \
+})
+
+#define CHECK_SZ(pred, code, sz) ({                                 \
+    if(!pred){                                                      \
+        char    msg[1024] = {};                                     \
+        snprintf(msg, sizeof(msg)-1, "%d|%s %s %d|%s", code,        \
+                 __FILE__, __FUNCTION__, __LINE__, sz);             \
         eosio::check(pred, msg);                                    \
     }                                                               \
 })

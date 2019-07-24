@@ -46,6 +46,36 @@ namespace eosio {
                eosio::print("block_num = "); eosio::print(block_num); eosio::print("\n");
                eosio::print("tx_index = "); eosio::print(tx_index); eosio::print("\n");
             }
+
+            bool operator < (const struct chain_pos& another) const
+            {
+               return (
+                  this->block_num < another.block_num ||
+                  (
+                     this->block_num == another.block_num &&
+                     this->tx_index < another.tx_index
+                  )
+               );
+            }
+
+            bool operator == (const struct chain_pos& another) const
+            {
+               return (
+                  this->block_num == another.block_num &&
+                  this->tx_index == another.tx_index
+               );
+            }
+
+            bool operator > (const struct chain_pos& another) const
+            {
+               return (
+                  this->block_num > another.block_num ||
+                  (
+                     this->block_num == another.block_num &&
+                     this->tx_index > another.tx_index
+                  )
+               );
+            }
          };
 
          struct cctx_info {
@@ -124,7 +154,7 @@ namespace eosio {
          using setchainpos_action = eosio::action_wrapper<"setchainpos"_n, &safeoracle::setchainpos>;
          using pushcctxes_action = eosio::action_wrapper<"pushcctxes"_n, &safeoracle::pushcctxes>;
          using drawassets_action = eosio::action_wrapper<"drawassets"_n, &safeoracle::drawassets>;
-      
+
       private:    //////////////////////////////////////////////////
 
          struct [[eosio::table]] cctx {
@@ -160,6 +190,14 @@ namespace eosio {
             {
                eosio::print("block_num = "); eosio::print(block_num); eosio::print("\n");
                eosio::print("tx_index = "); eosio::print(tx_index); eosio::print("\n");
+            }
+
+            bool operator == (const struct chain_pos& pos) const
+            {
+               return (
+                  this->block_num == pos.block_num &&
+                  this->tx_index == pos.tx_index
+               );
             }
          };
 

@@ -62,20 +62,11 @@ void safeoracle::pushcctxes( const struct chain_pos& curpos, const struct chain_
 
     ///////////////////////////////////////////////////////
 
-    check(
-        (
-            nextpos.block_num > curpos.block_num ||
-            ( nextpos.block_num == curpos.block_num && nextpos.tx_index > curpos.tx_index )
-        ),
-        "error, nextpos must > curpos."
-    );
+    check( nextpos > curpos, "error, nextpos must > curpos." );
 
     type_table__globalkv    tbl_globalkv(get_first_receiver(), get_first_receiver().value);
     globalkv    dlt = tbl_globalkv.get();
-    check(
-        dlt.block_num == curpos.block_num && dlt.tx_index == curpos.tx_index,
-        "error, tbl_globalkv(which `curpos` has read chain-position info) has been changed, aborting."
-    );
+    check( dlt == curpos, "error, tbl_globalkv(which `curpos` has read chain-position info) has been changed, aborting." );
 
     ///////////////////////////////////////////////////////
 
