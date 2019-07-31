@@ -17,6 +17,7 @@ namespace eosiosystem {
     _global(get_self(), get_self().value),
     _global2(get_self(), get_self().value),
     _global3(get_self(), get_self().value),
+    _tab_rewards4sc(get_self(), get_self().value),
     _rammarket(get_self(), get_self().value),
     _rexpool(get_self(), get_self().value),
     _rexfunds(get_self(), get_self().value),
@@ -27,12 +28,21 @@ namespace eosiosystem {
       _gstate  = _global.exists() ? _global.get() : get_default_parameters();
       _gstate2 = _global2.exists() ? _global2.get() : eosio_global_state2{};
       _gstate3 = _global3.exists() ? _global3.get() : eosio_global_state3{};
+      _rewards4sc = _tab_rewards4sc.exists() ? _tab_rewards4sc.get(): get_default_rewards4sc();
    }
 
    eosio_global_state system_contract::get_default_parameters() {
       eosio_global_state dp;
       get_blockchain_parameters(dp);
       return dp;
+   }
+
+   rewards4sc system_contract::get_default_rewards4sc() {
+      rewards4sc ret;
+      ret.base_bt = block_timestamp();
+      ret.yrewards_list[0] = {0, 100000000 * blocks_per_day * 52 * 7};
+      ret.yrewards_list[1] = {0, 200000000 * blocks_per_day * 52 * 7};
+      return (ret);
    }
 
    symbol system_contract::core_symbol()const {
@@ -44,6 +54,7 @@ namespace eosiosystem {
       _global.set( _gstate, get_self() );
       _global2.set( _gstate2, get_self() );
       _global3.set( _gstate3, get_self() );
+      _tab_rewards4sc.set( _rewards4sc, get_self() );
    }
 
    void system_contract::setram( uint64_t max_ram_size ) {

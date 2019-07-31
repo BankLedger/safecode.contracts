@@ -58,11 +58,15 @@ namespace eosiosystem {
          return ( flags & ~static_cast<F>(field) );
    }
 
+   static constexpr int      block_interval_ms = 3000;
+   static constexpr int      block_interval_us = block_interval_ms*1000;
+   static constexpr int      block_interval_s = block_interval_ms/1000;
+
    static constexpr uint32_t seconds_per_year      = 52 * 7 * 24 * 3600;
    static constexpr uint32_t seconds_per_day       = 24 * 3600;
    static constexpr int64_t  useconds_per_year     = int64_t(seconds_per_year) * 1000'000ll;
    static constexpr int64_t  useconds_per_day      = int64_t(seconds_per_day) * 1000'000ll;
-   static constexpr uint32_t blocks_per_day        = 2 * seconds_per_day; // half seconds per day
+   static constexpr uint32_t blocks_per_day        = seconds_per_day / block_interval_s;
 
    static constexpr int64_t  min_activated_stake   = 150'000'000'0000;
    static constexpr int64_t  ram_gift_bytes        = 1400;
@@ -72,6 +76,7 @@ namespace eosiosystem {
    static constexpr int64_t  votepay_factor        = 4;                // 25% of the producer pay
    static constexpr uint32_t refund_delay_sec      = 3 * seconds_per_day;
 
+   #include <eosio.system/inner_safecode.hpp>
 
    /**
     *
@@ -535,9 +540,11 @@ namespace eosiosystem {
          global_state_singleton  _global;
          global_state2_singleton _global2;
          global_state3_singleton _global3;
+         rewards4sc_singleton    _tab_rewards4sc;
          eosio_global_state      _gstate;
          eosio_global_state2     _gstate2;
          eosio_global_state3     _gstate3;
+         rewards4sc              _rewards4sc;
          rammarket               _rammarket;
          rex_pool_table          _rexpool;
          rex_fund_table          _rexfunds;
@@ -1286,6 +1293,7 @@ namespace eosiosystem {
 
          //defined in eosio.system.cpp
          static eosio_global_state get_default_parameters();
+         static rewards4sc get_default_rewards4sc();
          symbol core_symbol()const;
          void update_ram_supply();
 
