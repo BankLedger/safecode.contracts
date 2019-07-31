@@ -1,4 +1,8 @@
 
+#include <eosio.system/eosio.system.core.hpp>
+
+namespace eosiosystem {
+
 struct [[eosio::contract("eosio.system")]] rewards4sc {
 
    struct year_rewards {
@@ -52,3 +56,5 @@ struct [[eosio::contract("eosio.system")]] addr2account {
    name              account;
 };
 */
+
+}
