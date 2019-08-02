@@ -366,13 +366,13 @@ namespace eosiosystem {
       auto system_token_supply   = eosio::token::get_supply(token_account, core.code() );
       check( system_token_supply.symbol == core, "specified core symbol does not exist (precision mismatch)" );
 
-      check( system_token_supply.amount > 0, "system token supply must be greater than 0" );
+      //check( system_token_supply.amount > 0, "system token supply must be greater than 0" );
       _rammarket.emplace( get_self(), [&]( auto& m ) {
          m.supply.amount = 100000000000000ll;
          m.supply.symbol = ramcore_symbol;
          m.base.balance.amount = int64_t(_gstate.free_ram());
          m.base.balance.symbol = ram_symbol;
-         m.quote.balance.amount = system_token_supply.amount / 1000;
+         m.quote.balance.amount = 1000'0000'00000000 / 4; //1000w buy 55GB; //system_token_supply.amount / 1000;
          m.quote.balance.symbol = core;
       });
 
