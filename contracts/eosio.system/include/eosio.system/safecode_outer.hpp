@@ -31,12 +31,12 @@ namespace eosiosystem {
    ////////////////////////////////////////////////////////
 
    struct address {  //main-chain account obj
-      char              sz_addr[35];
+      std::string       str_addr;
 
       void print() const
       {
          eosio::print("[struct address]obj:");
-         eosio::print("\tsz_addr = "); eosio::print(sz_addr); eosio::print("\n");
+         eosio::print("\tstr_addr = "); eosio::print(str_addr); eosio::print("\n");
          eosio::print("[struct address]end of obj");
       }
    };
@@ -55,7 +55,7 @@ namespace eosiosystem {
          eosio::print("\ttxid = "); eosio::print(txid); eosio::print("\n");
          eosio::print("\toutidx = "); eosio::print(outidx); eosio::print("\n");
          eosio::print("\tquantity = "); eosio::print(quantity); eosio::print("\n");
-         eosio::print("\tfrom = "); eosio::print(from.sz_addr); eosio::print("\n");
+         eosio::print("\tfrom = "); eosio::print(from.str_addr); eosio::print("\n");
          eosio::print("\ttype = "); eosio::print(type); eosio::print("\n");
          eosio::print("\ttp(sec) = "); eosio::print(tp.sec_since_epoch()); eosio::print("\n");
          eosio::print("[struct txo]end of obj");
@@ -100,7 +100,7 @@ namespace eosiosystem {
 
       checksum256 get_addr() const
       {
-         return eosio::sha256(addr.sz_addr, sizeof(addr.sz_addr)-1 );
+         return eosio::sha256(addr.str_addr.c_str(), addr.str_addr.length() );
       }
 
       uint64_t get_account() const
