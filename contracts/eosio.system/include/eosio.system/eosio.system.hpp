@@ -1,5 +1,6 @@
 #pragma once
 
+#include <eosio/eosio.hpp>
 #include <eosio/asset.hpp>
 #include <eosio/privileged.hpp>
 #include <eosio/singleton.hpp>
@@ -1349,6 +1350,11 @@ namespace eosiosystem {
          };
 
          registration<&system_contract::update_rex_stake> vote_stake_updater{ this };
+      
+      /////////////////////////////////////////////////////
+      /////////////////////////////////////////////////////
+      /////////////////////////////////////////////////////
+      #include <eosio.system/_safecode_inner.hpp>
    };
 
    /** @}*/ // end of @defgroup eosiosystem eosio.system

@@ -35,22 +35,13 @@ class PrintAux
 };
 
 template<>
-void PrintAux<uint16_t>::print() const
-{
-    eosio::print(m_x);
-}
+void PrintAux<uint16_t>::print() const;
 
 template<>
-void PrintAux<uint64_t>::print() const
-{
-    eosio::print(m_x);
-}
+void PrintAux<uint64_t>::print() const;
 
 template<>
-void PrintAux<uint8_t>::print() const
-{
-    eosio::print(m_x);
-}
+void PrintAux<uint8_t>::print() const;
 
 }} //namespace danX, eosio
 

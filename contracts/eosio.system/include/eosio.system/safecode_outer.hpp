@@ -32,15 +32,34 @@ namespace eosiosystem {
 
    struct address {  //main-chain account obj
       char              sz_addr[35];
+
+      void print() const
+      {
+         eosio::print("[struct address]obj:");
+         eosio::print("\tsz_addr = "); eosio::print(sz_addr); eosio::print("\n");
+         eosio::print("[struct address]end of obj");
+      }
    };
 
    struct txo {
       checksum256       txid;    //txid at safe chain
-      uint8_t           outidx;  //out-index of utxo tx's vout array
+      uint8_t           outidx;  //out-index of utxo tx's vout array, base from 0
       uint64_t          quality;
       address           from;
       uint8_t           type;    //masternode-locked, non-masternode-locked, liquid
-      block_timestamp   txbt;    //when gen transaction
+      time_point        tp;      //when gen transaction
+
+      void print() const
+      {
+         eosio::print("[struct txo]obj:");
+         eosio::print("\ttxid = "); eosio::print(txid); eosio::print("\n");
+         eosio::print("\toutidx = "); eosio::print(outidx); eosio::print("\n");
+         eosio::print("\tquality = "); eosio::print(quality); eosio::print("\n");
+         eosio::print("\tfrom = "); eosio::print(from.sz_addr); eosio::print("\n");
+         eosio::print("\ttype = "); eosio::print(type); eosio::print("\n");
+         eosio::print("\ttp(sec) = "); eosio::print(tp.sec_since_epoch()); eosio::print("\n");
+         eosio::print("[struct txo]end of obj");
+      }
    };
 
    ////////////////////////////////////////////////////////
@@ -49,7 +68,7 @@ namespace eosiosystem {
       uint64_t          v_id;       //auto increament
       txo               v_txo;
       name              v_bp;
-      block_timestamp   v_bt;       //when voting
+      time_point        v_tp;       //when voting
       double            v_weight;
 
       uint64_t primary_key() const

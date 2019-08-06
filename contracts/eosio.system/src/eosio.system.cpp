@@ -4,7 +4,6 @@
 #include <eosio/crypto.hpp>
 #include <eosio/dispatcher.hpp>
 
-#include <eosio.system/checkkit.hpp>
 #include <eosio.system/printkit.hpp>
 
 namespace eosiosystem {

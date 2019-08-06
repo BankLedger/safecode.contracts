@@ -11,7 +11,6 @@ void __check(bool pred, const char* file, const char* func, int line, int errcod
 
 void check(bool pred, const char* file, const char* func, int line, int errcode, const char *fmt, ...);
 
-
 void check(bool pred, const char* file, const char* func, int line, int errcode, const std::string& str);
 
 }} //namespace danX, eosio
