@@ -35,9 +35,9 @@ namespace eosiosystem {
 
       void print() const
       {
-         eosio::print("[struct address]obj:");
+         eosio::print("[struct address]obj:\n");
          eosio::print("\tstr_addr = "); eosio::print(str_addr); eosio::print("\n");
-         eosio::print("[struct address]end of obj");
+         eosio::print("[struct address]end of obj\n");
       }
    };
 
@@ -51,14 +51,14 @@ namespace eosiosystem {
 
       void print() const
       {
-         eosio::print("[struct txo]obj:");
+         eosio::print("[struct txo]obj:\n");
          eosio::print("\ttxid = "); eosio::print(txid); eosio::print("\n");
          eosio::print("\toutidx = "); eosio::print(outidx); eosio::print("\n");
          eosio::print("\tquantity = "); eosio::print(quantity); eosio::print("\n");
          eosio::print("\tfrom = "); eosio::print(from.str_addr); eosio::print("\n");
          eosio::print("\ttype = "); eosio::print(type); eosio::print("\n");
          eosio::print("\ttp(sec) = "); eosio::print(tp.sec_since_epoch()); eosio::print("\n");
-         eosio::print("[struct txo]end of obj");
+         eosio::print("[struct txo]end of obj\n");
       }
    };
 
