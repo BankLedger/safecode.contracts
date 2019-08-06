@@ -9,7 +9,7 @@
 #include <eosio.system/eosio.system.core.hpp>
 #include <eosio.system/exchange_state.hpp>
 #include <eosio.system/native.hpp>
-#include <eosio.system/safecode.hpp>
+#include <eosio.system/safecode_outer.hpp>
 
 #include <deque>
 #include <optional>
