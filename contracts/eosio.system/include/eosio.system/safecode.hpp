@@ -23,17 +23,15 @@ namespace eosiosystem {
          eosio::print("\n");
       }
 
-
       uint64_t get_amount(const block_timestamp& bt1, const block_timestamp& bt2);
    };
 
    typedef eosio::singleton< "rewards4sc"_n, rewards4sc >   rewards4sc_singleton;
 
+   ////////////////////////////////////////////////////////
 
-
-   /* 
    struct address {  //main-chain account obj
-
+      char              sz_addr[35];
    };
 
    struct txo {
@@ -42,18 +40,66 @@ namespace eosiosystem {
       uint64_t          quality;
       address           from;
       uint8_t           type;    //masternode-locked, non-masternode-locked, liquid
+      block_timestamp   txbt;    //when gen transaction
    };
+
+   ////////////////////////////////////////////////////////
 
    struct [[eosio::contract("eosio.system")]] vtxo4sc {
-      uint64_t          v_id;
+      uint64_t          v_id;       //auto increament
       txo               v_txo;
       name              v_bp;
-      block_timestamp   v_bt;
+      block_timestamp   v_bt;       //when voting
+      double            v_weight;
+
+      uint64_t primary_key() const
+      {
+         return (v_id);
+      }
+
+      checksum256 get_txid() const
+      {
+         return (v_txo.txid);
+      }
    };
 
+   typedef eosio::multi_index<"vtxo4sc"_n, vtxo4sc, 
+      indexed_by<"txid"_n, const_mem_fun<vtxo4sc, checksum256, &vtxo4sc::get_txid>>
+   > type_table__vtxo4sc;
+
+   ////////////////////////////////////////////////////////
+
    struct [[eosio::contract("eosio.system")]] addr2account {
+      uint64_t          id;         //auto increament
       address           addr;
       name              account;
+
+      uint64_t primary_key() const
+      {
+         return (id);
+      }
+
+      checksum256 get_addr() const
+      {
+         return eosio::sha256(addr.sz_addr, sizeof(addr.sz_addr)-1 );
+      }
+
+      uint64_t get_account() const
+      {
+         return (account.value);
+      }
+   };
+
+   typedef eosio::multi_index<"addr2account"_n, addr2account, 
+      indexed_by<"addr"_n, const_mem_fun<addr2account, checksum256, &addr2account::get_addr>>,
+      indexed_by<"account"_n, const_mem_fun<addr2account, uint64_t, &addr2account::get_account>>
+   > type_table__addr2account;
+
+   ////////////////////////////////////////////////////////
+
+   /* 
+   struct [[eosio::contract("eosio.system")]] vtxoes {
+
    };
    */
 

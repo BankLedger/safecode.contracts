@@ -502,6 +502,9 @@ namespace eosiosystem {
    class [[eosio::contract("eosio.system")]] system_contract : public native {
 
       private:
+         type_table__vtxo4sc        _vtxo4sc;
+         type_table__addr2account   _addr2account;
+
          voters_table            _voters;
          producers_table         _producers;
          producers_table2        _producers2;
