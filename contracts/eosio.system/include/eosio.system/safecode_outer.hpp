@@ -44,7 +44,7 @@ namespace eosiosystem {
    struct txo {
       checksum256       txid;    //txid at safe chain
       uint8_t           outidx;  //out-index of utxo tx's vout array, base from 0
-      uint64_t          quality;
+      uint64_t          quantity;
       address           from;
       uint8_t           type;    //masternode-locked, non-masternode-locked, liquid
       time_point        tp;      //when gen transaction
@@ -54,7 +54,7 @@ namespace eosiosystem {
          eosio::print("[struct txo]obj:");
          eosio::print("\ttxid = "); eosio::print(txid); eosio::print("\n");
          eosio::print("\toutidx = "); eosio::print(outidx); eosio::print("\n");
-         eosio::print("\tquality = "); eosio::print(quality); eosio::print("\n");
+         eosio::print("\tquantity = "); eosio::print(quantity); eosio::print("\n");
          eosio::print("\tfrom = "); eosio::print(from.sz_addr); eosio::print("\n");
          eosio::print("\ttype = "); eosio::print(type); eosio::print("\n");
          eosio::print("\ttp(sec) = "); eosio::print(tp.sec_since_epoch()); eosio::print("\n");
