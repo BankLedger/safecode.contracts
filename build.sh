@@ -61,6 +61,6 @@ NC='\033[0m'
 CPU_CORES=$(getconf _NPROCESSORS_ONLN)
 mkdir -p build
 pushd build &> /dev/null
-cmake ../
+${EOSIO_ROOT}/bin/cmake ../
 make -j $CPU_CORES
 popd &> /dev/null

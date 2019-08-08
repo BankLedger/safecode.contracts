@@ -1,8 +1,11 @@
-cmake_minimum_required( VERSION 3.5 )
+cmake_minimum_required( VERSION 3.13 )
 
 set(EOSIO_VERSION_MIN "1.8")
 set(EOSIO_VERSION_SOFT_MAX "1.8")
 #set(EOSIO_VERSION_HARD_MAX "")
+
+set(CMAKE_CXX_FLAGS " -stdlib=libc++ ")
+set(CMAKE_EXE_LINKER_FLAGS "-Wl,-rpath,$ENV{EOSIO_ROOT}/opt/clang8/lib")
 
 find_package(eosio)
 
