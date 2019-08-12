@@ -4,7 +4,7 @@
 #include <eosio/chain/abi_serializer.hpp>
 #include <eosio/chain/resource_limits.hpp>
 #include "contracts.hpp"
-#include "test_symbol.hpp"
+#include "safe_symbol.hpp"
 
 #include <fc/variant_object.hpp>
 #include <fstream>
