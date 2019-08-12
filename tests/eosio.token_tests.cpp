@@ -15,6 +15,7 @@ using namespace fc;
 using namespace std;
 
 using mvo = fc::mutable_variant_object;
+namespace utf = boost::unit_test;
 
 class eosio_token_tester : public tester {
 public:
@@ -121,7 +122,7 @@ public:
    abi_serializer abi_ser;
 };
 
-BOOST_AUTO_TEST_SUITE(eosio_token_tests)
+BOOST_AUTO_TEST_SUITE(eosio_token_tests, * utf::disabled())
 
 BOOST_FIXTURE_TEST_CASE( create_tests, eosio_token_tester ) try {
 

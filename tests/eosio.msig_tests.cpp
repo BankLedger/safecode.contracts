@@ -17,6 +17,8 @@ using namespace fc;
 
 using mvo = fc::mutable_variant_object;
 
+namespace utf = boost::unit_test;
+
 class eosio_msig_tester : public tester {
 public:
    eosio_msig_tester() {
@@ -178,7 +180,7 @@ transaction eosio_msig_tester::reqauth( account_name from, const vector<permissi
    return trx;
 }
 
-BOOST_AUTO_TEST_SUITE(eosio_msig_tests)
+BOOST_AUTO_TEST_SUITE(eosio_msig_tests, * utf::disabled())
 
 BOOST_FIXTURE_TEST_CASE( propose_approve_execute, eosio_msig_tester ) try {
    auto trx = reqauth("alice", {permission_level{N(alice), config::active_name}}, abi_serializer_max_time );

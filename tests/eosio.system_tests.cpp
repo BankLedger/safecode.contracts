@@ -11,6 +11,8 @@
 #include <Runtime/Runtime.h>
 
 #include "eosio.system_tester.hpp"
+namespace utf = boost::unit_test;
+
 struct _abi_hash {
    name owner;
    fc::sha256 hash;
@@ -25,7 +27,7 @@ FC_REFLECT( connector, (balance)(weight) );
 
 using namespace eosio_system;
 
-BOOST_AUTO_TEST_SUITE(eosio_system_tests)
+BOOST_AUTO_TEST_SUITE(eosio_system_tests, * utf::disabled())
 
 bool within_one(int64_t a, int64_t b) { return std::abs(a - b) <= 1; }
 

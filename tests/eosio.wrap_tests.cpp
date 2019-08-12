@@ -15,6 +15,7 @@ using namespace eosio::testing;
 using namespace fc;
 
 using mvo = fc::mutable_variant_object;
+namespace utf = boost::unit_test;
 
 class eosio_wrap_tester : public tester {
 public:
@@ -160,7 +161,7 @@ transaction eosio_wrap_tester::reqauth( account_name from, const vector<permissi
    return trx;
 }
 
-BOOST_AUTO_TEST_SUITE(eosio_wrap_tests)
+BOOST_AUTO_TEST_SUITE(eosio_wrap_tests, * utf::disabled())
 
 BOOST_FIXTURE_TEST_CASE( wrap_exec_direct, eosio_wrap_tester ) try {
    auto trx = reqauth( N(bob), {permission_level{N(bob), config::active_name}} );
