@@ -977,6 +977,40 @@ public:
       time_point        tp;      //when gen transaction
    };
 
+   fc::sha256 checksum256_p2f(const checksum256_type& p) const
+   {
+      fc::sha256 r;
+      r._hash[0] = p._hash[1];
+      r._hash[1] = p._hash[0];
+
+      r._hash[2] = p._hash[3];
+      r._hash[3] = p._hash[2];
+
+      for(int i = 0; i < 4; ++i){
+         uint64_t v = r._hash[i];
+         uint64_t b0 = (v & 0x00000000000000ffU);
+         uint64_t b1 = (v & 0x000000000000ff00U);
+         uint64_t b2 = (v & 0x0000000000ff0000U);
+         uint64_t b3 = (v & 0x00000000ff000000U);
+         uint64_t b4 = (v & 0x000000ff00000000U);
+         uint64_t b5 = (v & 0x0000ff0000000000U);
+         uint64_t b6 = (v & 0x00ff000000000000U);
+         uint64_t b7 = (v & 0xff00000000000000U);
+
+         uint64_t _b0 = b0 << 56;
+         uint64_t _b1 = b1 << 40;
+         uint64_t _b2 = b2 << 24;
+         uint64_t _b3 = b3 << 8;
+         uint64_t _b4 = b4 >> 8;
+         uint64_t _b5 = b5 >> 24;
+         uint64_t _b6 = b6 >> 40;
+         uint64_t _b7 = b7 >> 56;
+
+         r._hash[i] = _b0 | _b1 | _b2 | _b3 | _b4 | _b5 | _b6 | _b7;
+      }
+      return r;
+   }
+
    action_result vtxo2prod( const struct txo& txo, const name& producer ) {
       return push_action( config::system_account_name, N(vtxo2prod), mutable_variant_object()
                                 ("txo",      txo)
@@ -1004,8 +1038,72 @@ public:
       return data;
    }
 
+   typedef eosio::chain::secondary_index<checksum256_type,index256_object_type>::index_index    index256_index;
+   typedef eosio::chain::secondary_index<checksum256_type,index256_object_type>::index_object   index256_object;
+   //typedef eosio::chain::index256_object  index256_object;
+   //typedef eosio::chain::index256_index   index256_index;
+
+   vector<char> get_row_by_txid( uint64_t code, uint64_t scope, uint64_t table, const checksum256_type&  txid ) const {
+      vector<char> data;
+      const auto& db = control->db();
+      
+      static const uint8_t secondary_index_num = 0;
+
+      const auto* const table_id = db.find<eosio::chain::table_id_object, eosio::chain::by_code_scope_table>(
+           boost::make_tuple(code, scope, table));
+      const auto* const secondary_table_id = db.find<eosio::chain::table_id_object, eosio::chain::by_code_scope_table>(
+            boost::make_tuple(code, scope, table | secondary_index_num));
+      if ( !table_id || !secondary_table_id ) {
+         std::cout << __FILE__ << ' ' << __LINE__ << std::endl;
+         return data;
+      }
+
+      const auto& kv_index = db.get_index<key_value_index, by_scope_primary>();
+      const auto& secondary_index = db.get_index<index256_index>().indices();
+      const auto& secondary_index_by_primary = secondary_index.get<by_primary>();
+      const auto& secondary_index_by_secondary = secondary_index.get<by_secondary>();
+
+      std::cout << __FILE__ << __LINE__ << ':' << txid.str() << std::endl;
+
+      auto itr = secondary_index_by_secondary.lower_bound(
+            boost::make_tuple(secondary_table_id->id, checksum256_p2f(txid), 0));
+      //auto itr = secondary_index.project<by_secondary>(
+      //      secondary_index_by_primary.lower_bound(
+      //         boost::make_tuple(secondary_table_id->id, 1)));
+
+      if (  itr == secondary_index_by_secondary.end() || 
+            itr->t_id != secondary_table_id->id) {
+         std::cout << __FILE__ << ' ' << __LINE__ << ": itr == secondary_index_by_secondary.end() " << (itr == secondary_index_by_secondary.end()) << std::endl;
+         return data;
+      }
+
+      std::cout << __FILE__ << ' ' << __LINE__ << ": " << itr->secondary_key.str() << std::endl;
+      std::cout << __FILE__ << ' ' << __LINE__ << ": " << checksum256_p2f(txid).str() << std::endl;
+      
+      auto pid = itr->primary_key;
+      auto itr2 = kv_index.lower_bound( boost::make_tuple( table_id->id, pid ) );
+      if ( itr2 == kv_index.end() || itr2->t_id != table_id->id || pid != itr2->primary_key ) {
+         std::cout << __FILE__ << ' ' << __LINE__ << std::endl;
+         return data;
+      }
+
+      data.resize( itr2->value.size() );
+      memcpy( data.data(), itr2->value.data(), data.size() );
+      return data;
+
+      // std::cout << "%%%% itr->secondary_key.str(): " << itr->secondary_key.str() << std::endl;
+      // std::cout << "%%%% (itr == idx.end()): " << (itr == idx.end()) << std::endl;
+      // std::cout << "%%%% (itr->t_id != t_id->id): " << (itr->t_id != t_id->id) << std::endl;
+      // std::cout << "%%%% (txid != itr->secondary_key): " << (txid != itr->secondary_key) << std::endl;
+   }
+
    fc::variant get_vtxo4sc(uint64_t v_id) {
       vector<char> data = get_row_by_pkey( config::system_account_name, config::system_account_name, N(vtxo4sc), v_id );
+      return data.empty() ? fc::variant() : abi_ser.binary_to_variant( "vtxo4sc", data, abi_serializer_max_time );
+   }
+
+   fc::variant get_vtxo4sc(const checksum256_type&  txid) {
+      vector<char> data = get_row_by_txid( config::system_account_name, config::system_account_name, N(vtxo4sc), txid );
       return data.empty() ? fc::variant() : abi_ser.binary_to_variant( "vtxo4sc", data, abi_serializer_max_time );
    }
 
@@ -1042,3 +1140,6 @@ inline uint64_t M( const string& eos_str ) {
 }
 
 }
+
+FC_REFLECT( eosio_system::es_safecode_tester::address, (str_addr) );
+FC_REFLECT( eosio_system::es_safecode_tester::txo, (txid)(outidx)(quantity)(from)(type)(tp) );

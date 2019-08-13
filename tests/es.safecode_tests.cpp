@@ -24,11 +24,6 @@ struct connector {
    double weight = .5;
 };
 FC_REFLECT( connector, (balance)(weight) );
-
-
-FC_REFLECT( eosio_system::es_safecode_tester::address, (str_addr) );
-FC_REFLECT( eosio_system::es_safecode_tester::txo, (txid)(outidx)(quantity)(from)(type)(tp) );
-
 using namespace eosio_system;
 
 BOOST_AUTO_TEST_SUITE(es_safecode_tests, * utf::enabled())
@@ -41,7 +36,7 @@ BOOST_FIXTURE_TEST_CASE( vtxo2prod_function, es_safecode_tester ) try {
    struct address addr = {.str_addr = "eeee"};
    struct txo vtxo = {
       .txid = fc::sha256::hash("d1"),
-      .outidx = 0,
+      .outidx = 5,
       .quantity = 0,
       .from = addr,
       .type = 1,
@@ -54,9 +49,15 @@ BOOST_FIXTURE_TEST_CASE( vtxo2prod_function, es_safecode_tester ) try {
    BOOST_REQUIRE_EQUAL( 0, temp["v_id"] );
 
    vtxo.txid = fc::sha256::hash("d2");
+   std::cout << __FILE__ << __LINE__ << ":" << vtxo.txid.str() << std::endl;
    BOOST_REQUIRE_EQUAL( success(), vtxo2prod(vtxo, "prod11111") );
    temp = get_vtxo4sc(1);
    BOOST_REQUIRE_EQUAL( 1, temp["v_id"] );
+
+   temp = get_vtxo4sc(vtxo.txid);
+   //std::cout << temp.is_object() << std::endl;
+   BOOST_REQUIRE_EQUAL( vtxo.txid, temp["v_txo"].as<struct txo>().txid );
+   BOOST_REQUIRE_EQUAL( 5, temp["v_txo"].as<struct txo>().outidx );
 
    //2. insert duplicated row
 
