@@ -33,7 +33,8 @@ public:
       produce_blocks( 2 );
 
       create_accounts({ N(eosio.token), N(eosio.ram), N(eosio.ramfee), N(eosio.stake),
-               N(eosio.bpay), N(eosio.vpay), N(eosio.saving), N(eosio.names), N(eosio.rex) });
+               N(eosio.bpay), N(eosio.vpay), N(eosio.saving), N(eosio.names), N(eosio.rex),
+               N(safe), N(safe.oracle) });
 
 
       produce_blocks( 100 );
@@ -48,10 +49,11 @@ public:
    }
 
    void create_core_token( symbol core_symbol = symbol{CORE_SYM} ) {
-      FC_ASSERT( core_symbol.decimals() == 4, "create_core_token assumes core token has 4 digits of precision" );
-      create_currency( N(eosio.token), config::system_account_name, asset(100000000000000, core_symbol) );
-      issue( asset(10000000000000, core_symbol) );
-      BOOST_REQUIRE_EQUAL( asset(10000000000000, core_symbol), get_balance( "eosio", core_symbol ) );
+      FC_ASSERT( core_symbol.decimals() == 8, "create_core_token assumes core token has 8 digits of precision" );
+      create_currency( N(eosio.token), config::system_account_name, asset(4500000'00000000, core_symbol) );
+      //issue( asset(0, core_symbol) );
+      //BOOST_REQUIRE_EQUAL( asset(0, core_symbol), get_balance( "eosio", core_symbol ) );
+      BOOST_REQUIRE_EQUAL( asset(4500000'00000000, core_symbol), get_token_max_supply() );
    }
 
    void deploy_contract( bool call_init = true ) {
@@ -76,12 +78,12 @@ public:
    void remaining_setup() {
       produce_blocks();
 
-      // Assumes previous setup steps were done with core token symbol set to CORE_SYM
-      create_account_with_resources( N(alice1111111), config::system_account_name, core_sym::from_string("1.0000"), false );
-      create_account_with_resources( N(bob111111111), config::system_account_name, core_sym::from_string("0.4500"), false );
-      create_account_with_resources( N(carol1111111), config::system_account_name, core_sym::from_string("1.0000"), false );
+      // // Assumes previous setup steps were done with core token symbol set to CORE_SYM
+      // create_account_with_resources( N(alice1111111), config::system_account_name, core_sym::from_string("1.0000"), false );
+      // create_account_with_resources( N(bob111111111), config::system_account_name, core_sym::from_string("0.4500"), false );
+      // create_account_with_resources( N(carol1111111), config::system_account_name, core_sym::from_string("1.0000"), false );
 
-      BOOST_REQUIRE_EQUAL( core_sym::from_string("1000000000.0000"), get_balance("eosio")  + get_balance("eosio.ramfee") + get_balance("eosio.stake") + get_balance("eosio.ram") );
+      // BOOST_REQUIRE_EQUAL( core_sym::from_string("1000000000.0000"), get_balance("eosio")  + get_balance("eosio.ramfee") + get_balance("eosio.stake") + get_balance("eosio.ram") );
    }
 
    enum class setup_level {
@@ -808,7 +810,11 @@ public:
    }
 
    asset get_token_supply() {
-      return get_stats("4," CORE_SYM_NAME)["supply"].as<asset>();
+      return get_stats("8," CORE_SYM_NAME)["supply"].as<asset>();
+   }
+
+   asset get_token_max_supply() {
+      return get_stats(CORE_SYM_STR)["max_supply"].as<asset>();
    }
 
    uint64_t microseconds_since_epoch_of_iso_string( const fc::variant& v ) {
@@ -956,6 +962,51 @@ public:
          push_transaction( trx );
          produce_block();
       }
+   }
+
+   struct address {  //main-chain account obj
+      string            str_addr;
+   };
+
+   struct txo {
+      checksum256_type  txid;    //txid at safe chain
+      uint8_t           outidx;  //out-index of utxo tx's vout array, base from 0
+      uint64_t          quantity;
+      address           from;
+      uint8_t           type;    //masternode-locked, non-masternode-locked, liquid
+      time_point        tp;      //when gen transaction
+   };
+
+   action_result vtxo2prod( const struct txo& txo, const name& producer ) {
+      return push_action( config::system_account_name, N(vtxo2prod), mutable_variant_object()
+                                ("txo",      txo)
+                                ("producer", producer )
+                                );
+   }
+
+   vector<char> get_row_by_pkey( uint64_t code, uint64_t scope, uint64_t table, uint64_t primary_key ) const {
+      vector<char> data;
+      const auto& db = control->db();
+      const auto* t_id = db.find<eosio::chain::table_id_object, eosio::chain::by_code_scope_table>( boost::make_tuple( code, scope, table ) );
+      if ( !t_id ) {
+         return data;
+      }
+      //FC_ASSERT( t_id != 0, "object not found" );
+      const auto& idx = db.get_index<eosio::chain::key_value_index, eosio::chain::by_scope_primary>();
+
+      auto itr = idx.lower_bound( boost::make_tuple( t_id->id, primary_key ) );
+      if ( itr == idx.end() || itr->t_id != t_id->id || primary_key != itr->primary_key ) {
+         return data;
+      }
+
+      data.resize( itr->value.size() );
+      memcpy( data.data(), itr->value.data(), data.size() );
+      return data;
+   }
+
+   fc::variant get_vtxo4sc(uint64_t v_id) {
+      vector<char> data = get_row_by_pkey( config::system_account_name, config::system_account_name, N(vtxo4sc), v_id );
+      return data.empty() ? fc::variant() : abi_ser.binary_to_variant( "vtxo4sc", data, abi_serializer_max_time );
    }
 
    abi_serializer abi_ser;

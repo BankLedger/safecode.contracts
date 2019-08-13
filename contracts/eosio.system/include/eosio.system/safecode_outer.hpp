@@ -64,7 +64,7 @@ namespace eosiosystem {
 
    ////////////////////////////////////////////////////////
 
-   struct [[eosio::contract("eosio.system")]] vtxo4sc {
+   struct [[eosio::table,eosio::contract("eosio.system")]] vtxo4sc {
       uint64_t          v_id;       //auto increament
       txo               v_txo;
       name              v_bp;
@@ -88,7 +88,7 @@ namespace eosiosystem {
 
    ////////////////////////////////////////////////////////
 
-   struct [[eosio::contract("eosio.system")]] addr2account {
+   struct [[eosio::table,eosio::contract("eosio.system")]] addr2account {
       uint64_t          id;         //auto increament
       address           addr;
       name              account;

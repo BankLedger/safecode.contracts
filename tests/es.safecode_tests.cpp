@@ -25,12 +25,47 @@ struct connector {
 };
 FC_REFLECT( connector, (balance)(weight) );
 
+
+FC_REFLECT( eosio_system::es_safecode_tester::address, (str_addr) );
+FC_REFLECT( eosio_system::es_safecode_tester::txo, (txid)(outidx)(quantity)(from)(type)(tp) );
+
 using namespace eosio_system;
 
-BOOST_AUTO_TEST_SUITE(es_safecode_tests, * utf::disabled())
+BOOST_AUTO_TEST_SUITE(es_safecode_tests, * utf::enabled())
 
 bool within_one(int64_t a, int64_t b) { return std::abs(a - b) <= 1; }
 
+BOOST_FIXTURE_TEST_CASE( vtxo2prod_function, es_safecode_tester ) try {
+
+   //1. insert new row
+   struct address addr = {.str_addr = "eeee"};
+   struct txo vtxo = {
+      .txid = fc::sha256::hash("d1"),
+      .outidx = 0,
+      .quantity = 0,
+      .from = addr,
+      .type = 1,
+      .tp = fc::time_point::from_iso_string("2010-08-06T08:08:08")
+   };
+
+   BOOST_REQUIRE_EQUAL( success(), vtxo2prod(vtxo, "prod11111") );
+
+   auto temp = get_vtxo4sc(0);
+   BOOST_REQUIRE_EQUAL( 0, temp["v_id"] );
+
+   vtxo.txid = fc::sha256::hash("d2");
+   BOOST_REQUIRE_EQUAL( success(), vtxo2prod(vtxo, "prod11111") );
+   temp = get_vtxo4sc(1);
+   BOOST_REQUIRE_EQUAL( 1, temp["v_id"] );
+
+   //2. insert duplicated row
+
+
+   //3. insert total 20w rows
+
+} FC_LOG_AND_RETHROW()
+
+#if   0        //closed by danx
 BOOST_FIXTURE_TEST_CASE( buysell, es_safecode_tester ) try {
 
    BOOST_REQUIRE_EQUAL( core_sym::from_string("0.0000"), get_balance( "alice1111111" ) );
@@ -5172,5 +5207,5 @@ BOOST_FIXTURE_TEST_CASE( buy_pin_sell_ram, es_safecode_tester ) try {
    BOOST_REQUIRE( double(tokens_paid_for_ram.get_amount() - tokens_received_by_selling_ram.get_amount()) / tokens_paid_for_ram.get_amount() < 0.01 );
 
 } FC_LOG_AND_RETHROW()
-
+#endif   //closed by danx
 BOOST_AUTO_TEST_SUITE_END()
