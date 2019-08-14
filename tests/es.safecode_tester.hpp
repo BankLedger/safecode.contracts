@@ -1038,6 +1038,29 @@ public:
       return data;
    }
 
+   vector<char> get_list_by_min_pkey( uint64_t code, uint64_t scope, uint64_t table, uint64_t primary_key ) const {
+      vector<char> data;
+      const auto& db = control->db();
+      const auto* t_id = db.find<eosio::chain::table_id_object, eosio::chain::by_code_scope_table>( boost::make_tuple( code, scope, table ) );
+      if ( !t_id ) {
+         return data;
+      }
+      //FC_ASSERT( t_id != 0, "object not found" );
+      const auto& idx = db.get_index<eosio::chain::key_value_index, eosio::chain::by_scope_primary>();
+
+      auto itr = idx.lower_bound( boost::make_tuple( t_id->id, primary_key ) );
+      for(; itr != idx.end() && itr->t_id == t_id->id; ++itr ) {
+         if (itr->primary_key >= primary_key) {
+            std::cout << __FILE__ << ' ' << __LINE__ << ": " << itr->primary_key << std::endl;
+            data.insert(data.end(), itr->value.data(), itr->value.data()+itr->value.size());
+         }
+      }
+      return data;
+      //data.resize( itr->value.size() );
+      //memcpy( data.data(), itr->value.data(), data.size() );
+      //return data;
+   }
+
    typedef eosio::chain::secondary_index<checksum256_type,index256_object_type>::index_index    index256_index;
    typedef eosio::chain::secondary_index<checksum256_type,index256_object_type>::index_object   index256_object;
    //typedef eosio::chain::index256_object  index256_object;
@@ -1097,8 +1120,65 @@ public:
       // std::cout << "%%%% (txid != itr->secondary_key): " << (txid != itr->secondary_key) << std::endl;
    }
 
+   vector<char> get_list_by_min_txid( uint64_t code, uint64_t scope, uint64_t table, const checksum256_type&  txid ) const {
+      vector<char> data;
+      const auto& db = control->db();
+      
+      static const uint8_t secondary_index_num = 0;
+
+      const auto* const table_id = db.find<eosio::chain::table_id_object, eosio::chain::by_code_scope_table>(
+           boost::make_tuple(code, scope, table));
+      const auto* const secondary_table_id = db.find<eosio::chain::table_id_object, eosio::chain::by_code_scope_table>(
+            boost::make_tuple(code, scope, table | secondary_index_num));
+      if ( !table_id || !secondary_table_id ) {
+         std::cout << __FILE__ << ' ' << __LINE__ << std::endl;
+         return data;
+      }
+
+      const auto& kv_index = db.get_index<key_value_index, by_scope_primary>();
+      const auto& secondary_index = db.get_index<index256_index>().indices();
+      const auto& secondary_index_by_primary = secondary_index.get<by_primary>();
+      const auto& secondary_index_by_secondary = secondary_index.get<by_secondary>();
+
+      std::cout << __FILE__ << __LINE__ << ':' << txid.str() << std::endl;
+
+      auto itr = secondary_index_by_secondary.lower_bound(
+            boost::make_tuple(secondary_table_id->id, checksum256_p2f(txid), 0));
+      //auto itr = secondary_index.project<by_secondary>(
+      //      secondary_index_by_primary.lower_bound(
+      //         boost::make_tuple(secondary_table_id->id, 1)));
+
+      for(; itr != secondary_index_by_secondary.end() && itr->t_id == secondary_table_id->id; ++itr ) {
+         if (itr->secondary_key >= checksum256_p2f(txid)) {
+            std::cout << __FILE__ << ' ' << __LINE__ << ": " << itr->primary_key << std::endl;
+            std::cout << __FILE__ << ' ' << __LINE__ << ": " << itr->secondary_key.str() << std::endl;
+
+            auto pid = itr->primary_key;
+            //if(pid != 8) {continue;}
+            auto itr2 = kv_index.lower_bound( boost::make_tuple( table_id->id, pid ) );
+            if ( itr2 == kv_index.end() || itr2->t_id != table_id->id || pid != itr2->primary_key ) {
+               std::cout << __FILE__ << ' ' << __LINE__ << std::endl;
+               continue;
+            }
+
+            data.insert(data.end(), itr2->value.data(), itr2->value.data()+itr2->value.size());
+         }
+      }
+      return data;
+   }
+
    fc::variant get_vtxo4sc(uint64_t v_id) {
       vector<char> data = get_row_by_pkey( config::system_account_name, config::system_account_name, N(vtxo4sc), v_id );
+      return data.empty() ? fc::variant() : abi_ser.binary_to_variant( "vtxo4sc", data, abi_serializer_max_time );
+   }
+
+   fc::variant get_vtxo4sc_list(uint64_t v_id) {
+      vector<char> data = get_list_by_min_pkey( config::system_account_name, config::system_account_name, N(vtxo4sc), v_id );
+      return data.empty() ? fc::variant() : abi_ser.binary_to_variant( "vtxo4sc", data, abi_serializer_max_time );
+   }
+
+   fc::variant get_vtxo4sc_list(const checksum256_type&  txid) {
+      vector<char> data = get_list_by_min_txid( config::system_account_name, config::system_account_name, N(vtxo4sc), txid );
       return data.empty() ? fc::variant() : abi_ser.binary_to_variant( "vtxo4sc", data, abi_serializer_max_time );
    }
 
