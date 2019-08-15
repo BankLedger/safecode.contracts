@@ -505,6 +505,7 @@ namespace eosiosystem {
       private:
          type_table__sf5vtxo        _sf5vtxo;
          type_table__sfaddr2accnt   _sfaddr2accnt;
+         type_table__sf5producers   _sf5producers;
 
          voters_table            _voters;
          producers_table         _producers;

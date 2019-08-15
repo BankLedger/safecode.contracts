@@ -46,7 +46,7 @@ namespace eosiosystem {
       uint8_t           outidx;  //out-index of utxo tx's vout array, base from 0
       uint64_t          quantity;
       sfaddress         from;
-      uint8_t           type;    //masternode-locked, non-masternode-locked, liquid
+      uint8_t           type;    //0:masternode-locked; 1:non-masternode-locked, liquid
       time_point        tp;      //when gen transaction
 
       void print() const
@@ -82,19 +82,24 @@ namespace eosiosystem {
    };
 
    struct [[eosio::table,eosio::contract("eosio.system")]] sf5producers {
-      uint64_t          p_id;       //auto increament
-      txo               p_txo;
-      sfreginfo         p_sfri;
-      bool              p_enable;
+      uint64_t          prmrid;     //auto increament
+      txo               rptxo;
+      sfreginfo         ri;
+      bool              enable;
 
       uint64_t primary_key() const
       {
-         return (p_id);
+         return (prmrid);
       }
 
       checksum256 index_by_txid() const
       {
-         return (p_txo.txid);
+         return (rptxo.txid);
+      }
+
+      uint8_t get_tx_outidx() const
+      {
+         return (rptxo.outidx);
       }
    };
 
@@ -106,21 +111,27 @@ namespace eosiosystem {
    ////////////////////////////////////////////////////////
 
    struct [[eosio::table,eosio::contract("eosio.system")]] sf5vtxo {
-      uint64_t          v_id;       //auto increament
-      txo               v_txo;
-      name              v_bp;
-      time_point        v_tp;       //when voting
-      double            v_weight;
+      uint64_t          prmrid;     //auto increament
+      checksum256       rptxid;
+      txo               vtxo;
+      time_point        tp_vote;    //when voting
+      double            weight;
 
       uint64_t primary_key() const
       {
-         return (v_id);
+         return (prmrid);
       }
 
       checksum256 index_by_txid() const
       {
-         return (v_txo.txid);
+         return (vtxo.txid);
       }
+
+      uint8_t get_tx_outidx() const
+      {
+         return (vtxo.outidx);
+      }
+
    };
 
    typedef eosio::multi_index<"sf5vtxo"_n, sf5vtxo, 

@@ -15,6 +15,7 @@ namespace eosiosystem {
    :native(s,code,ds),
     _sf5vtxo(get_self(), get_self().value),
     _sfaddr2accnt(get_self(), get_self().value),
+    _sf5producers(get_self(), get_self().value),
     _voters(get_self(), get_self().value),
     _producers(get_self(), get_self().value),
     _producers2(get_self(), get_self().value),

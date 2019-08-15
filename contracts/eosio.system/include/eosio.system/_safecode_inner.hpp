@@ -16,8 +16,8 @@
        * @post 
        * 
        */   
-      [[eosio::action]]
-      void vtxo2prod( const struct txo& txo, const name& producer );
+      // [[eosio::action]]
+      // void sf5vote( const struct txo& txo, const name& producer );
 
       /**
        * 
@@ -27,7 +27,9 @@
        * @param txo - 
        * @param sfri - 
        *
-       * @pre txo(unlocked) is never used to register as any producer.
+       * @pre txo(unlocked) is never used to register as any producer
+       * @pre sfri.dvdratio is in range [0, 100]
+       * @pre sfri verify infohash/sc_sig/sc_pubkey successfully
        * 
        * @post 
        * 
