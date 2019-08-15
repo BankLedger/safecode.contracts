@@ -1107,23 +1107,23 @@ public:
    }
 
    fc::variant get_vtxo4sc(uint64_t v_id) {
-      vector<char> data = get_row_by_pkey( config::system_account_name, config::system_account_name, N(vtxo4sc), v_id );
-      return data.empty() ? fc::variant() : abi_ser.binary_to_variant( "vtxo4sc", data, abi_serializer_max_time );
+      vector<char> data = get_row_by_pkey( config::system_account_name, config::system_account_name, N(sf5vtxo), v_id );
+      return data.empty() ? fc::variant() : abi_ser.binary_to_variant( "sf5vtxo", data, abi_serializer_max_time );
    }
 
    fc::variant get_vtxo4sc_list(uint64_t v_id) {
-      vector<char> data = get_list_by_min_pkey( config::system_account_name, config::system_account_name, N(vtxo4sc), v_id );
-      return data.empty() ? fc::variant() : abi_ser.binary_to_variant( "vtxo4sc", data, abi_serializer_max_time );
+      vector<char> data = get_list_by_min_pkey( config::system_account_name, config::system_account_name, N(sf5vtxo), v_id );
+      return data.empty() ? fc::variant() : abi_ser.binary_to_variant( "sf5vtxo", data, abi_serializer_max_time );
    }
 
    fc::variant get_vtxo4sc_list(const checksum256_type&  txid) {
-      vector<char> data = get_list_by_min_txid( config::system_account_name, config::system_account_name, N(vtxo4sc), txid );
-      return data.empty() ? fc::variant() : abi_ser.binary_to_variant( "vtxo4sc", data, abi_serializer_max_time );
+      vector<char> data = get_list_by_min_txid( config::system_account_name, config::system_account_name, N(sf5vtxo), txid );
+      return data.empty() ? fc::variant() : abi_ser.binary_to_variant( "sf5vtxo", data, abi_serializer_max_time );
    }
 
    fc::variant get_vtxo4sc(const checksum256_type&  txid) {
-      vector<char> data = get_row_by_txid( config::system_account_name, config::system_account_name, N(vtxo4sc), txid );
-      return data.empty() ? fc::variant() : abi_ser.binary_to_variant( "vtxo4sc", data, abi_serializer_max_time );
+      vector<char> data = get_row_by_txid( config::system_account_name, config::system_account_name, N(sf5vtxo), txid );
+      return data.empty() ? fc::variant() : abi_ser.binary_to_variant( "sf5vtxo", data, abi_serializer_max_time );
    }
 
    abi_serializer abi_ser;
