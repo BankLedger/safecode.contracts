@@ -76,6 +76,23 @@ BOOST_FIXTURE_TEST_CASE( vtxo2prod_function, es_safecode_tester ) try {
    // std::cout << __FILE__ << " " << __LINE__ << ": " << temp2["v_txo"]["outidx"].as<uint16_t>() << std::endl;
    // std::cout << __FILE__ << " " << __LINE__ << ": " << temp2["v_txo"].as<struct txo>().from.str_addr << std::endl;
 
+   BOOST_REQUIRE_EQUAL( 
+      success(), 
+      checksign( 
+         fc::sha256("b6f9dd313cde39ae1b87e63b9b457029bcea6e9520b5db5de20d3284e4c0259e"), 
+         signature_type(string("SIG_K1_K64eRzRg5Gha1iS4AVvSPK1Eicq6kQQv9GnRSN9xaW8LxCBsJkjeNFDsqDQ25KyRSAKuYrCc2uuD9NjSm4KDRxRMPoQV5f")), 
+         public_key_type(string("EOS4uyHP7iMBpT9xxfa4jrXqFhqQgEE9BLeH9tVRrQna7L6uUZ1WA"))
+      )
+   );
+
+   BOOST_REQUIRE_EQUAL( 
+      string("Error expected key different than recovered key"),
+      checksign( 
+         fc::sha256("b6f9dd313cde39ae1b87e63b9b457029bcea6e9520b5db5de20d3284e4c0259e"), 
+         signature_type(string("SIG_K1_K64eRzRg5Gha1iS4AVvSPK1Eicq6kQQv9GnRSN9xaW8LxCBsJkjeNFDsqDQ25KyRSAKuYrCc2uuD9NjSm4KDRxRMPoQV5f")), 
+         public_key_type(string("EOS5ssNFoyvTPyVhFpZPTAyAYbBz71EZw3yTzvhtvgdgGFumg8Ead"))
+      )
+   );
 
    //2. insert duplicated row
 

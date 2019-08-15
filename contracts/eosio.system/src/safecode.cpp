@@ -39,4 +39,9 @@ namespace eosiosystem {
       });
    }
 
+   void system_contract::checksign( const eosio::checksum256& digest, const eosio::signature& sig, const eosio::public_key& pubkey )
+   {
+      assert_recover_key( digest, sig, pubkey );
+   }
+
 } /// namespace eosiosystem

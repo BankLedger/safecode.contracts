@@ -949,6 +949,14 @@ public:
                                 );
    }
 
+   action_result checksign( const checksum256_type& digest, const signature_type& sig, const public_key_type& pubkey ) {
+      return push_action( config::system_account_name, N(checksign), mutable_variant_object()
+                                ("digest",      digest)
+                                ("sig",         sig )
+                                ("pubkey",      pubkey )
+                                );
+   }
+
    vector<char> get_row_by_pkey( uint64_t code, uint64_t scope, uint64_t table, uint64_t primary_key ) const {
       vector<char> data;
       const auto& db = control->db();

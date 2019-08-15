@@ -19,6 +19,9 @@
       [[eosio::action]]
       void vtxo2prod( const struct txo& txo, const name& producer );
 
+      [[eosio::action]]
+      void checksign( const eosio::checksum256& digest, const eosio::signature& sig, const eosio::public_key& pubkey );
+
    private:
       template< typename TableIndex >
       auto findByTxo( const TableIndex& tbl_index, const struct txo& txo );
