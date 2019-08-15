@@ -30,13 +30,13 @@ namespace eosiosystem {
 
    ////////////////////////////////////////////////////////
 
-   struct address {  //main-chain account obj
-      std::string       str_addr;
+   struct sfaddress {  //main-chain account obj
+      std::string       str;
 
       void print() const
       {
          eosio::print("[struct address]obj:\n");
-         eosio::print("\tstr_addr = "); eosio::print(str_addr); eosio::print("\n");
+         eosio::print("\tstr = "); eosio::print(str); eosio::print("\n");
          eosio::print("[struct address]end of obj\n");
       }
    };
@@ -45,7 +45,7 @@ namespace eosiosystem {
       checksum256       txid;    //txid at safe chain
       uint8_t           outidx;  //out-index of utxo tx's vout array, base from 0
       uint64_t          quantity;
-      address           from;
+      sfaddress         from;
       uint8_t           type;    //masternode-locked, non-masternode-locked, liquid
       time_point        tp;      //when gen transaction
 
@@ -55,7 +55,7 @@ namespace eosiosystem {
          eosio::print("\ttxid = "); eosio::print(txid); eosio::print("\n");
          eosio::print("\toutidx = "); eosio::print(outidx); eosio::print("\n");
          eosio::print("\tquantity = "); eosio::print(quantity); eosio::print("\n");
-         eosio::print("\tfrom = "); eosio::print(from.str_addr); eosio::print("\n");
+         eosio::print("\tfrom = "); eosio::print(from.str); eosio::print("\n");
          eosio::print("\ttype = "); eosio::print(type); eosio::print("\n");
          eosio::print("\ttp(sec) = "); eosio::print(tp.sec_since_epoch()); eosio::print("\n");
          eosio::print("[struct txo]end of obj\n");
@@ -88,9 +88,9 @@ namespace eosiosystem {
 
    ////////////////////////////////////////////////////////
 
-   struct [[eosio::table,eosio::contract("eosio.system")]] addr2account {
+   struct [[eosio::table,eosio::contract("eosio.system")]] sfaddr2accnt {
       uint64_t          id;         //auto increament
-      address           addr;
+      sfaddress         sfaddr;
       name              account;
 
       uint64_t primary_key() const
@@ -98,21 +98,21 @@ namespace eosiosystem {
          return (id);
       }
 
-      checksum256 get_addr() const
+      checksum256 index_by_sfaddr() const
       {
-         return eosio::sha256(addr.str_addr.c_str(), addr.str_addr.length() );
+         return eosio::sha256(sfaddr.str.c_str(), sfaddr.str.length() );
       }
 
-      uint64_t get_account() const
+      uint64_t index_by_account() const
       {
          return (account.value);
       }
    };
 
-   typedef eosio::multi_index<"addr2account"_n, addr2account, 
-      indexed_by<"addr"_n, const_mem_fun<addr2account, checksum256, &addr2account::get_addr>>,
-      indexed_by<"account"_n, const_mem_fun<addr2account, uint64_t, &addr2account::get_account>>
-   > type_table__addr2account;
+   typedef eosio::multi_index<"sfaddr2accnt"_n, sfaddr2accnt, 
+      indexed_by<"by3sfaddr"_n, const_mem_fun<sfaddr2accnt, checksum256, &sfaddr2accnt::index_by_sfaddr>>,
+      indexed_by<"by3account"_n, const_mem_fun<sfaddr2accnt, uint64_t, &sfaddr2accnt::index_by_account>>
+   > type_table__sfaddr2accnt;
 
    ////////////////////////////////////////////////////////
 

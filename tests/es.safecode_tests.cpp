@@ -33,7 +33,7 @@ bool within_one(int64_t a, int64_t b) { return std::abs(a - b) <= 1; }
 BOOST_FIXTURE_TEST_CASE( vtxo2prod_function, es_safecode_tester ) try {
 
    //1. insert new row
-   struct address addr = {.str_addr = "eeee"};
+   struct sfaddress addr = {.str = "eeee"};
    struct txo vtxo = {
       .txid = fc::sha256::hash("d1"),
       .outidx = 5,

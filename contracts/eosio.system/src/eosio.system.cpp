@@ -14,7 +14,7 @@ namespace eosiosystem {
    system_contract::system_contract( name s, name code, datastream<const char*> ds )
    :native(s,code,ds),
     _sf5vtxo(get_self(), get_self().value),
-    _addr2account(get_self(), get_self().value),
+    _sfaddr2accnt(get_self(), get_self().value),
     _voters(get_self(), get_self().value),
     _producers(get_self(), get_self().value),
     _producers2(get_self(), get_self().value),

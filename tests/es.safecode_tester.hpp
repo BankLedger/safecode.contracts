@@ -895,15 +895,15 @@ public:
       }
    }
 
-   struct address {  //main-chain account obj
-      string            str_addr;
+   struct sfaddress {  //main-chain account obj
+      string            str;
    };
 
    struct txo {
       checksum256_type  txid;    //txid at safe chain
       uint8_t           outidx;  //out-index of utxo tx's vout array, base from 0
       uint64_t          quantity;
-      address           from;
+      sfaddress         from;
       uint8_t           type;    //masternode-locked, non-masternode-locked, liquid
       time_point        tp;      //when gen transaction
    };
@@ -1160,5 +1160,5 @@ inline uint64_t M( const string& eos_str ) {
 
 }
 
-FC_REFLECT( eosio_system::es_safecode_tester::address, (str_addr) );
+FC_REFLECT( eosio_system::es_safecode_tester::sfaddress, (str) );
 FC_REFLECT( eosio_system::es_safecode_tester::txo, (txid)(outidx)(quantity)(from)(type)(tp) );
