@@ -84,4 +84,45 @@ namespace eosio_system {
       deploy_contract();
       remaining_setup();
    }
+
+   fc::sha256 es_safecode_tester::inverted(const checksum256_type& p) const
+   {
+      fc::sha256 r;
+      r._hash[0] = p._hash[1];
+      r._hash[1] = p._hash[0];
+
+      r._hash[2] = p._hash[3];
+      r._hash[3] = p._hash[2];
+
+      for(int i = 0; i < 4; ++i){
+         uint64_t v = r._hash[i];
+         uint64_t b0 = (v & 0x00000000000000ffU);
+         uint64_t b1 = (v & 0x000000000000ff00U);
+         uint64_t b2 = (v & 0x0000000000ff0000U);
+         uint64_t b3 = (v & 0x00000000ff000000U);
+         uint64_t b4 = (v & 0x000000ff00000000U);
+         uint64_t b5 = (v & 0x0000ff0000000000U);
+         uint64_t b6 = (v & 0x00ff000000000000U);
+         uint64_t b7 = (v & 0xff00000000000000U);
+
+         uint64_t _b0 = b0 << 56;
+         uint64_t _b1 = b1 << 40;
+         uint64_t _b2 = b2 << 24;
+         uint64_t _b3 = b3 << 8;
+         uint64_t _b4 = b4 >> 8;
+         uint64_t _b5 = b5 >> 24;
+         uint64_t _b6 = b6 >> 40;
+         uint64_t _b7 = b7 >> 56;
+
+         r._hash[i] = _b0 | _b1 | _b2 | _b3 | _b4 | _b5 | _b6 | _b7;
+      }
+      return r;
+   }
+
+   es_safecode_tester::action_result es_safecode_tester::sf5regprod( const struct txo& rptxo, const struct sfreginfo& sfri ) {
+      return push_action( config::system_account_name, N(sf5regprod), mutable_variant_object()
+                                ("rptxo",    rptxo)
+                                ("sfri",     sfri )
+                                );
+   }
 }

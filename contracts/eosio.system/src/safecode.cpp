@@ -39,23 +39,24 @@ namespace eosiosystem {
    //    });
    // }
 
-   void system_contract::sf5regprod( const struct txo& txo, const struct sfreginfo& sfri )
+   void system_contract::sf5regprod( const struct txo& rptxo, const struct sfreginfo& sfri )
    {
-      auto found_ret = findByTxo(_sf5producers.get_index<"by3txid"_n>(), txo);
+      auto found_ret = findByTxo(_sf5producers.get_index<"by3txid"_n>(), rptxo);
       auto found = std::get<0>(found_ret);
-      check( found == false, "error, txo has exists at table sf5producers" );
+      check( found == false, "error, rptxo has exists at table sf5producers" );
+      check( rptxo.type == 1, "error, sfri.type must is 1(non-locked assert)" );
       check( sfri.dvdratio >= 0 && sfri.dvdratio <= 100, "error, sfri.dvdratio must be in range [0, 100]" );
       assert_recover_key( sfri.infohash, sfri.sc_sig, sfri.sc_pubkey );
 
       _sf5producers.emplace(get_self(), [&]( auto& row ) {
          row.prmrid  = _sf5producers.available_primary_key();
-         row.rptxo   = txo;
+         row.rptxo   = rptxo;
          row.ri      = sfri;
          row.enable  = true;
       });
    }
 
-   void system_contract::sf5unregprod( const struct txo& txo )
+   void system_contract::sf5unregprod( const struct txo& rptxo )
    {
 
    }

@@ -24,10 +24,10 @@
        *
        * @details 
        *
-       * @param txo - 
+       * @param rptxo - 
        * @param sfri - 
        *
-       * @pre txo(unlocked) is never used to register as any producer
+       * @pre rptxo(unlocked) is never used to register as any producer
        * @pre sfri.dvdratio is in range [0, 100]
        * @pre sfri verify infohash/sc_sig/sc_pubkey successfully
        * 
@@ -35,10 +35,10 @@
        * 
        */
       [[eosio::action]]
-      void sf5regprod( const struct txo& txo, const struct sfreginfo& sfri );
+      void sf5regprod( const struct txo& rptxo, const struct sfreginfo& sfri );
 
       [[eosio::action]]
-      void sf5unregprod( const struct txo& txo );
+      void sf5unregprod( const struct txo& rptxo );
 
 
 

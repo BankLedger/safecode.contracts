@@ -30,6 +30,48 @@ BOOST_AUTO_TEST_SUITE(es_safecode_tests, * utf::enabled())
 
 bool within_one(int64_t a, int64_t b) { return std::abs(a - b) <= 1; }
 
+BOOST_FIXTURE_TEST_CASE( sf5regprod_function, es_safecode_tester ) try {
+
+   struct sfaddress addr = {.str = "XbKRU7w4Js8HCUKXdo12DR3nFDrnakWniz"};
+
+   struct txo rptxo = {
+      .txid = fc::sha256("053e3258272116fa1eb29e429896f177732fb6aa7ef5fe9a600ac8caff5cc58e"),
+      .outidx = 0,
+      .quantity = 5453,
+      .from = addr,
+      .type = 1,
+      .tp = fc::time_point::from_iso_string("2010-08-06T08:08:08")
+   };
+
+   struct sfreginfo sfri = {
+      .sc_pubkey  = public_key_type(string("EOS4uyHP7iMBpT9xxfa4jrXqFhqQgEE9BLeH9tVRrQna7L6uUZ1WA")),
+      .dvdratio   = 13,
+      .infohash   = fc::sha256(string("a9356224809a9b0a012952d9abdcfad3a599e6d13ec7550f9187aade8aa9539e")), //fc::sha256().hash("danx is chen-xiao-dan")
+      
+      /*
+      curl --request POST \
+      --url http://127.0.0.1:5550/v1/wallet/sign_digest \
+      --header 'content-type: application/json' -d '["a9356224809a9b0a012952d9abdcfad3a599e6d13ec7550f9187aade8aa9539e","EOS4uyHP7iMBpT9xxfa4jrXqFhqQgEE9BLeH9tVRrQna7L6uUZ1WA"]'
+      */
+      .sc_sig     = signature_type(string("SIG_K1_Ka8tkSVB5AhJFgobFoq1XPPgVfAcaxDFEpizTyQkWTpPrKp22GZXorpFnFDfgiq4T6xAGSp3dZyeW4uVJMKupUrRLTDEZH"))
+   };
+
+   //insert first row
+   BOOST_REQUIRE_EQUAL( success(), sf5regprod(rptxo, sfri) );
+
+   //insert duplicate row
+   BOOST_REQUIRE_EQUAL( 
+      "assertion failure with message: error, rptxo has exists at table sf5producers", 
+      sf5regprod(rptxo, sfri)
+   );
+
+   //insert second row
+
+
+} FC_LOG_AND_RETHROW()
+
+
+#if 0
 BOOST_FIXTURE_TEST_CASE( vtxo2prod_function, es_safecode_tester ) try {
 
    //1. insert new row
@@ -100,5 +142,6 @@ BOOST_FIXTURE_TEST_CASE( vtxo2prod_function, es_safecode_tester ) try {
    //3. insert total 20w rows
 
 } FC_LOG_AND_RETHROW()
+#endif
 
 BOOST_AUTO_TEST_SUITE_END()
