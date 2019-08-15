@@ -26,12 +26,12 @@ namespace eosiosystem {
       DEBUG_PRINT_VAR(txo);
       DEBUG_PRINT_VAR(producer);
 
-      auto found_ret = findByTxo(_vtxo4sc.get_index<"txid"_n>(), txo);
+      auto found_ret = findByTxo(_sf5vtxo.get_index<"by3txid"_n>(), txo);
       auto found = std::get<0>(found_ret);
       check( found == false, "error, txo has exists at table vtxo4sc" );
 
-      _vtxo4sc.emplace(get_self(), [&]( auto& row ) {
-         row.v_id    = _vtxo4sc.available_primary_key();
+      _sf5vtxo.emplace(get_self(), [&]( auto& row ) {
+         row.v_id    = _sf5vtxo.available_primary_key();
          row.v_txo   = txo;
          row.v_bp    = producer;
          row.v_tp    = eosio::current_time_point();

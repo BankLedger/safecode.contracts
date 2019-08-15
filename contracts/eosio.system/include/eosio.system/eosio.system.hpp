@@ -503,7 +503,7 @@ namespace eosiosystem {
    class [[eosio::contract("eosio.system")]] system_contract : public native {
 
       private:
-         type_table__vtxo4sc        _vtxo4sc;
+         type_table__sf5vtxo        _sf5vtxo;
          type_table__addr2account   _addr2account;
 
          voters_table            _voters;
@@ -512,11 +512,12 @@ namespace eosiosystem {
          global_state_singleton  _global;
          global_state2_singleton _global2;
          global_state3_singleton _global3;
-         rewards4sc_singleton    _tab_rewards4sc;
+         sc5rewards_singleton    _sc5rewards;
+
          eosio_global_state      _gstate;
          eosio_global_state2     _gstate2;
          eosio_global_state3     _gstate3;
-         rewards4sc              _rewards4sc;
+         sc5rewards              _gstate_sc5rewards;
          rammarket               _rammarket;
          rex_pool_table          _rexpool;
          rex_fund_table          _rexfunds;
@@ -1265,7 +1266,7 @@ namespace eosiosystem {
 
          //defined in eosio.system.cpp
          static eosio_global_state get_default_parameters();
-         static rewards4sc get_default_rewards4sc();
+         static sc5rewards get_default_sc5rewards();
          symbol core_symbol()const;
          void update_ram_supply();
 

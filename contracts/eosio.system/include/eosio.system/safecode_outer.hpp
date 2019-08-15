@@ -3,7 +3,7 @@
 
 namespace eosiosystem {
 
-   struct [[eosio::contract("eosio.system")]] rewards4sc {
+   struct [[eosio::contract("eosio.system")]] sc5rewards {
 
       struct year_rewards {
          uint8_t  ynr;        //base from 0
@@ -26,7 +26,7 @@ namespace eosiosystem {
       uint64_t get_amount(const block_timestamp& bt1, const block_timestamp& bt2);
    };
 
-   typedef eosio::singleton< "rewards4sc"_n, rewards4sc >   rewards4sc_singleton;
+   typedef eosio::singleton< "sc5rewards"_n, sc5rewards >   sc5rewards_singleton;
 
    ////////////////////////////////////////////////////////
 
@@ -64,7 +64,7 @@ namespace eosiosystem {
 
    ////////////////////////////////////////////////////////
 
-   struct [[eosio::table,eosio::contract("eosio.system")]] vtxo4sc {
+   struct [[eosio::table,eosio::contract("eosio.system")]] sf5vtxo {
       uint64_t          v_id;       //auto increament
       txo               v_txo;
       name              v_bp;
@@ -76,15 +76,15 @@ namespace eosiosystem {
          return (v_id);
       }
 
-      checksum256 get_txid() const
+      checksum256 index_by_txid() const
       {
          return (v_txo.txid);
       }
    };
 
-   typedef eosio::multi_index<"vtxo4sc"_n, vtxo4sc, 
-      indexed_by<"txid"_n, const_mem_fun<vtxo4sc, checksum256, &vtxo4sc::get_txid>>
-   > type_table__vtxo4sc;
+   typedef eosio::multi_index<"sf5vtxo"_n, sf5vtxo, 
+      indexed_by<"by3txid"_n, const_mem_fun<sf5vtxo, checksum256, &sf5vtxo::index_by_txid>>
+   > type_table__sf5vtxo;
 
    ////////////////////////////////////////////////////////
 
