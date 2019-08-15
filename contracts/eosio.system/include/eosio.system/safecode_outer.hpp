@@ -64,6 +64,47 @@ namespace eosiosystem {
 
    ////////////////////////////////////////////////////////
 
+   struct sfreginfo {
+      public_key        sc_pubkey;
+      uint8_t           dvdratio;   //int: [0,100]
+      checksum256       infohash;
+      signature         sc_sig;
+
+      void print() const
+      {
+         // eosio::print("[struct sfreginfo]obj:\n");
+         // eosio::print("\tsc_pubkey = "); eosio::print(sc_pubkey); eosio::print("\n");
+         // eosio::print("\tdvdratio = "); eosio::print(dvdratio); eosio::print("\n");
+         // eosio::print("\tinfohash = "); eosio::print(infohash); eosio::print("\n");
+         // eosio::print("\tsc_sig = "); eosio::print(sc_sig); eosio::print("\n");
+         // eosio::print("[struct sfreginfo]end of obj\n");
+      }
+   };
+
+   struct [[eosio::table,eosio::contract("eosio.system")]] sf5producers {
+      uint64_t          p_id;       //auto increament
+      txo               p_txo;
+      sfreginfo         p_sfri;
+      bool              p_enable;
+
+      uint64_t primary_key() const
+      {
+         return (p_id);
+      }
+
+      checksum256 index_by_txid() const
+      {
+         return (p_txo.txid);
+      }
+   };
+
+   typedef eosio::multi_index<"sf5producers"_n, sf5producers, 
+      indexed_by<"by3txid"_n, const_mem_fun<sf5producers, checksum256, &sf5producers::index_by_txid>>
+   > type_table__sf5producers;
+
+
+   ////////////////////////////////////////////////////////
+
    struct [[eosio::table,eosio::contract("eosio.system")]] sf5vtxo {
       uint64_t          v_id;       //auto increament
       txo               v_txo;
@@ -116,10 +157,6 @@ namespace eosiosystem {
 
    ////////////////////////////////////////////////////////
 
-   /* 
-   struct [[eosio::contract("eosio.system")]] vtxoes {
 
-   };
-   */
 
 }

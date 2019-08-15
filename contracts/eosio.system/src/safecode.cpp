@@ -39,6 +39,16 @@ namespace eosiosystem {
       });
    }
 
+   void system_contract::sf5regprod( const struct txo& txo, const struct sfreginfo& sfri )
+   {
+
+   }
+
+   void system_contract::sf5unregprod( const struct txo& txo )
+   {
+
+   }
+
    void system_contract::checksign( const eosio::checksum256& digest, const eosio::signature& sig, const eosio::public_key& pubkey )
    {
       assert_recover_key( digest, sig, pubkey );

@@ -17,6 +17,7 @@ namespace eosiosystem {
    using eosio::time_point;
    using eosio::time_point_sec;
    using eosio::unsigned_int;
+   using eosio::signature;
 
    static constexpr int      block_interval_ms = 3000;
    static constexpr int      block_interval_us = block_interval_ms*1000;
