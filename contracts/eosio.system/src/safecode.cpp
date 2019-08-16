@@ -10,10 +10,10 @@ namespace eosiosystem {
    auto system_contract::findByTxo( const TableIndex& tbl_index, const struct txo& txo )
    {
       bool found = false;
-      auto itr_find_tx= tbl_index.lower_bound(txo.txid);
-      auto itr_find_tx_up = tbl_index.upper_bound(txo.txid);
+      auto itr_find_tx= tbl_index.lower_bound(txo.key.txid);
+      auto itr_find_tx_up = tbl_index.upper_bound(txo.key.txid);
       for( ; itr_find_tx != itr_find_tx_up; ++itr_find_tx ) {
-         if( itr_find_tx->index_by_txid() == txo.txid && itr_find_tx->get_tx_outidx() == txo.outidx ) {
+         if( itr_find_tx->index_by_txid() == txo.key.txid && itr_find_tx->get_tx_outidx() == txo.key.outidx ) {
             found = true;
             break;
          }
@@ -56,7 +56,7 @@ namespace eosiosystem {
       });
    }
 
-   void system_contract::sf5unregprod( const struct txo& rptxo )
+   void system_contract::sf5unregprod( const struct txokey& rptxokey )
    {
 
    }

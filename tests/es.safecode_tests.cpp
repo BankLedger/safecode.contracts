@@ -33,10 +33,13 @@ bool within_one(int64_t a, int64_t b) { return std::abs(a - b) <= 1; }
 BOOST_FIXTURE_TEST_CASE( sf5regprod_function, es_safecode_tester ) try {
 
    struct sfaddress addr = {.str = "XbKRU7w4Js8HCUKXdo12DR3nFDrnakWniz"};
+   struct txokey rptxokey = {
+         .txid = fc::sha256("053e3258272116fa1eb29e429896f177732fb6aa7ef5fe9a600ac8caff5cc58e"),
+         .outidx = 0,
+   };
 
    struct txo rptxo = {
-      .txid = fc::sha256("053e3258272116fa1eb29e429896f177732fb6aa7ef5fe9a600ac8caff5cc58e"),
-      .outidx = 0,
+      .key = rptxokey,
       .quantity = 5453,
       .from = addr,
       .type = 1,

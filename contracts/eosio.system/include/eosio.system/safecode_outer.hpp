@@ -41,9 +41,13 @@ namespace eosiosystem {
       }
    };
 
-   struct txo {
+   struct txokey {
       checksum256       txid;    //txid at safe chain
       uint8_t           outidx;  //out-index of utxo tx's vout array, base from 0
+   };
+
+   struct txo {
+      txokey            key;
       uint64_t          quantity;
       sfaddress         from;
       uint8_t           type;    //0:masternode-locked; 1:non-masternode-locked, liquid
@@ -52,8 +56,8 @@ namespace eosiosystem {
       void print() const
       {
          eosio::print("[struct txo]obj:\n");
-         eosio::print("\ttxid = "); eosio::print(txid); eosio::print("\n");
-         eosio::print("\toutidx = "); eosio::print(outidx); eosio::print("\n");
+         eosio::print("\ttxid = "); eosio::print(key.txid); eosio::print("\n");
+         eosio::print("\toutidx = "); eosio::print(key.outidx); eosio::print("\n");
          eosio::print("\tquantity = "); eosio::print(quantity); eosio::print("\n");
          eosio::print("\tfrom = "); eosio::print(from.str); eosio::print("\n");
          eosio::print("\ttype = "); eosio::print(type); eosio::print("\n");
@@ -94,12 +98,12 @@ namespace eosiosystem {
 
       checksum256 index_by_txid() const
       {
-         return (rptxo.txid);
+         return (rptxo.key.txid);
       }
 
       uint8_t get_tx_outidx() const
       {
-         return (rptxo.outidx);
+         return (rptxo.key.outidx);
       }
    };
 
@@ -124,12 +128,12 @@ namespace eosiosystem {
 
       checksum256 index_by_txid() const
       {
-         return (vtxo.txid);
+         return (vtxo.key.txid);
       }
 
       uint8_t get_tx_outidx() const
       {
-         return (vtxo.outidx);
+         return (vtxo.key.outidx);
       }
 
    };

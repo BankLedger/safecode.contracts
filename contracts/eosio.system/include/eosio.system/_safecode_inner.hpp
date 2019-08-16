@@ -38,7 +38,7 @@
       void sf5regprod( const struct txo& rptxo, const struct sfreginfo& sfri );
 
       [[eosio::action]]
-      void sf5unregprod( const struct txo& rptxo );
+      void sf5unregprod( const struct txokey& rptxokey );
 
 
 

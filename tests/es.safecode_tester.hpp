@@ -899,9 +899,13 @@ public:
       string            str;
    };
 
-   struct txo {
+   struct txokey {
       checksum256_type  txid;    //txid at safe chain
       uint8_t           outidx;  //out-index of utxo tx's vout array, base from 0
+   };
+
+   struct txo {
+      txokey            key;
       uint64_t          quantity;
       sfaddress         from;
       uint8_t           type;    //masternode-locked, non-masternode-locked, liquid
@@ -1137,5 +1141,6 @@ inline uint64_t M( const string& eos_str ) {
 }
 
 FC_REFLECT( eosio_system::es_safecode_tester::sfaddress, (str) );
-FC_REFLECT( eosio_system::es_safecode_tester::txo, (txid)(outidx)(quantity)(from)(type)(tp) );
+FC_REFLECT( eosio_system::es_safecode_tester::txokey, (txid)(outidx) );
+FC_REFLECT( eosio_system::es_safecode_tester::txo, (key)(quantity)(from)(type)(tp) );
 FC_REFLECT( eosio_system::es_safecode_tester::sfreginfo, (sc_pubkey)(dvdratio)(infohash)(sc_sig) );
