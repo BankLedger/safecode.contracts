@@ -7,13 +7,13 @@ namespace eosiosystem {
    using eosio::check;
 
    template< typename TableIndex >
-   auto system_contract::findByTxo( const TableIndex& tbl_index, const struct txo& txo )
+   auto system_contract::findByTxo( const TableIndex& tbl_index, const struct txokey& txokey )
    {
       bool found = false;
-      auto itr_find_tx= tbl_index.lower_bound(txo.key.txid);
-      auto itr_find_tx_up = tbl_index.upper_bound(txo.key.txid);
+      auto itr_find_tx= tbl_index.lower_bound(txokey.txid);
+      auto itr_find_tx_up = tbl_index.upper_bound(txokey.txid);
       for( ; itr_find_tx != itr_find_tx_up; ++itr_find_tx ) {
-         if( itr_find_tx->index_by_txid() == txo.key.txid && itr_find_tx->get_tx_outidx() == txo.key.outidx ) {
+         if( itr_find_tx->index_by_txid() == txokey.txid && itr_find_tx->get_tx_outidx() == txokey.outidx ) {
             found = true;
             break;
          }
@@ -41,7 +41,7 @@ namespace eosiosystem {
 
    void system_contract::sf5regprod( const struct txo& rptxo, const struct sfreginfo& sfri )
    {
-      auto found_ret = findByTxo(_sf5producers.get_index<"by3txid"_n>(), rptxo);
+      auto found_ret = findByTxo(_sf5producers.get_index<"by3txid"_n>(), rptxo.key);
       auto found = std::get<0>(found_ret);
       check( found == false, "error, rptxo has exists at table sf5producers" );
       check( rptxo.type == 1, "error, sfri.type must is 1(non-locked assert)" );
@@ -54,6 +54,11 @@ namespace eosiosystem {
          row.ri      = sfri;
          row.enable  = true;
       });
+   }
+
+   void system_contract::sf5vote( const struct txokey& rptxokey, const struct txo& vtxo )
+   {
+
    }
 
    void system_contract::sf5unregprod( const struct txokey& rptxokey )

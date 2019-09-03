@@ -8,22 +8,6 @@
        *
        * @details 
        *
-       * @param txo - 
-       * @param producer - 
-       *
-       * @pre txo(locked or unlocked) is never used to vote to any producer.
-       * 
-       * @post 
-       * 
-       */   
-      // [[eosio::action]]
-      // void sf5vote( const struct txo& txo, const name& producer );
-
-      /**
-       * 
-       *
-       * @details 
-       *
        * @param rptxo - 
        * @param sfri - 
        *
@@ -31,15 +15,33 @@
        * @pre sfri.dvdratio is in range [0, 100]
        * @pre sfri verify infohash/sc_sig/sc_pubkey successfully
        * 
-       * @post 
+       * @post do action sf5vote
+       * @post do action sf5unregprod
+       * @post do action regproducer
        * 
        */
       [[eosio::action]]
       void sf5regprod( const struct txo& rptxo, const struct sfreginfo& sfri );
 
+      /**
+       * 
+       *
+       * @details 
+       *
+       * @param rptxokey - 
+       * @param vtxo - 
+       *
+       * @pre txo(locked or unlocked) is never used to vote to any producer.
+       * 
+       * @post 
+       * 
+       */   
+      [[eosio::action]]
+      void sf5vote( const struct txokey& rptxokey, const struct txo& vtxo );
+
+
       [[eosio::action]]
       void sf5unregprod( const struct txokey& rptxokey );
-
 
 
       [[eosio::action]]
@@ -47,6 +49,6 @@
 
    private:
       template< typename TableIndex >
-      auto findByTxo( const TableIndex& tbl_index, const struct txo& txo );
+      auto findByTxo( const TableIndex& tbl_index, const struct txokey& txokey );
 
 //};

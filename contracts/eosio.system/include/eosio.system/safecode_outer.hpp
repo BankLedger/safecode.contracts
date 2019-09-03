@@ -3,6 +3,48 @@
 
 namespace eosiosystem {
 
+   struct [[eosio::contract("eosio.system")]] year3rewards {
+      uint8_t  ynr;        //base from 0
+      uint64_t amount;     //per block, unit (1E-8 SAFE)
+
+      uint64_t primary_key() const
+      {
+         return (ynr);
+      }
+
+      // explicit serialization macro is not necessary, used here only to improve compilation time
+      EOSLIB_SERIALIZE( year3rewards, (ynr)(amount) )
+   };
+   typedef eosio::multi_index<"year3rewards"_n, year3rewards> type_table__year3rewards;
+
+   ////////////////////////////////////////////////////////
+
+   struct [[eosio::contract("eosio.system")]] global4vote {
+
+      uint32_t    last_sch_ver;
+      uint32_t    active_timestamp;
+      uint32_t    last_calc_rewards_timestamp;
+      uint64_t    last_unpaid_rewards;
+      uint32_t    last_unpaid_block;
+      uint32_t    last_claim_week;
+      bool        last_top40bp_votes_change;
+      uint32_t    sf_atom_id;
+      uint32_t    sf_block_num;
+      uint16_t    sf_tx_index;
+
+      // explicit serialization macro is not necessary, used here only to improve compilation time
+      EOSLIB_SERIALIZE( global4vote, (last_sch_ver)(active_timestamp)(last_calc_rewards_timestamp)
+         (last_unpaid_rewards)(last_unpaid_block)(last_claim_week)(last_top40bp_votes_change)
+         (sf_atom_id)(sf_block_num)(sf_tx_index) )
+   };
+   typedef eosio::singleton< "global4vote"_n, global4vote >   global4vote_singleton;
+
+   ////////////////////////////////////////////////////////
+
+
+
+   ////////////////////////////////////////////////////////
+
    struct [[eosio::contract("eosio.system")]] sc5rewards {
 
       struct year_rewards {
@@ -25,9 +67,8 @@ namespace eosiosystem {
 
       uint64_t get_amount(const block_timestamp& bt1, const block_timestamp& bt2);
    };
-
    typedef eosio::singleton< "sc5rewards"_n, sc5rewards >   sc5rewards_singleton;
-
+   
    ////////////////////////////////////////////////////////
 
    struct sfaddress {  //main-chain account obj
@@ -39,11 +80,15 @@ namespace eosiosystem {
          eosio::print("\tstr = "); eosio::print(str); eosio::print("\n");
          eosio::print("[struct address]end of obj\n");
       }
+
+      EOSLIB_SERIALIZE( sfaddress, (str) )
    };
 
    struct txokey {
       checksum256       txid;    //txid at safe chain
       uint8_t           outidx;  //out-index of utxo tx's vout array, base from 0
+   
+      EOSLIB_SERIALIZE( txokey, (txid)(outidx) )
    };
 
    struct txo {
@@ -64,6 +109,8 @@ namespace eosiosystem {
          eosio::print("\ttp(sec) = "); eosio::print(tp.sec_since_epoch()); eosio::print("\n");
          eosio::print("[struct txo]end of obj\n");
       }
+
+      EOSLIB_SERIALIZE( txo, (key)(quantity)(from)(type)(tp) )
    };
 
    ////////////////////////////////////////////////////////
@@ -83,12 +130,17 @@ namespace eosiosystem {
          // eosio::print("\tsc_sig = "); eosio::print(sc_sig); eosio::print("\n");
          // eosio::print("[struct sfreginfo]end of obj\n");
       }
+
+      EOSLIB_SERIALIZE( sfreginfo, (sc_pubkey)(dvdratio)(infohash)(sc_sig) )
    };
 
    struct [[eosio::table,eosio::contract("eosio.system")]] sf5producers {
       uint64_t          prmrid;     //auto increament
       txo               rptxo;
       sfreginfo         ri;
+      name              owner;
+      uint64_t          sf_total;   //sf only
+      uint64_t          total;      //sf + sc
       bool              enable;
 
       uint64_t primary_key() const
@@ -101,14 +153,40 @@ namespace eosiosystem {
          return (rptxo.key.txid);
       }
 
+      checksum256 index_by_pubkey() const
+      {
+         return (eosio::sha256(ri.sc_pubkey.data.begin(), ri.sc_pubkey.data.size()));
+      }
+
+      uint64_t index_by_owner() const
+      {
+         return (owner.value);
+      }
+
+      uint64_t index_by_sf5total() const
+      {
+         return (sf_total);
+      }
+
+      uint64_t index_by_total() const
+      {
+         return (total);
+      }
+
       uint8_t get_tx_outidx() const
       {
          return (rptxo.key.outidx);
       }
+
+      EOSLIB_SERIALIZE( sf5producers, (prmrid)(rptxo)(ri)(enable) )
    };
 
    typedef eosio::multi_index<"sf5producers"_n, sf5producers, 
-      indexed_by<"by3txid"_n, const_mem_fun<sf5producers, checksum256, &sf5producers::index_by_txid>>
+      indexed_by<"by3txid"_n, const_mem_fun<sf5producers, checksum256, &sf5producers::index_by_txid>>,
+      indexed_by<"by3pubkey"_n, const_mem_fun<sf5producers, checksum256, &sf5producers::index_by_pubkey>>,
+      indexed_by<"by3owner"_n, const_mem_fun<sf5producers, uint64_t, &sf5producers::index_by_owner>>,
+      indexed_by<"by3sf5total"_n, const_mem_fun<sf5producers, uint64_t, &sf5producers::index_by_sf5total>>,
+      indexed_by<"by3total"_n, const_mem_fun<sf5producers, uint64_t, &sf5producers::index_by_total>>
    > type_table__sf5producers;
 
 
@@ -136,6 +214,7 @@ namespace eosiosystem {
          return (vtxo.key.outidx);
       }
 
+      EOSLIB_SERIALIZE( sf5vtxo, (prmrid)(rptxid)(vtxo)(tp_vote)(weight) )
    };
 
    typedef eosio::multi_index<"sf5vtxo"_n, sf5vtxo, 
@@ -145,13 +224,13 @@ namespace eosiosystem {
    ////////////////////////////////////////////////////////
 
    struct [[eosio::table,eosio::contract("eosio.system")]] sfaddr2accnt {
-      uint64_t          id;         //auto increament
+      uint64_t          prmrid;         //auto increament
       sfaddress         sfaddr;
       name              account;
 
       uint64_t primary_key() const
       {
-         return (id);
+         return (prmrid);
       }
 
       checksum256 index_by_sfaddr() const
@@ -163,6 +242,8 @@ namespace eosiosystem {
       {
          return (account.value);
       }
+
+      EOSLIB_SERIALIZE( sfaddr2accnt, (prmrid)(sfaddr)(account) )
    };
 
    typedef eosio::multi_index<"sfaddr2accnt"_n, sfaddr2accnt, 
@@ -171,7 +252,5 @@ namespace eosiosystem {
    > type_table__sfaddr2accnt;
 
    ////////////////////////////////////////////////////////
-
-
 
 }
