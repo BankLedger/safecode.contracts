@@ -278,6 +278,40 @@ namespace eosiosystem {
 
    ////////////////////////////////////////////////////////
 
+   struct [[eosio::table,eosio::contract("eosio.system")]] f3sf5vtxo {
+      uint64_t          prmrid;     //auto increament
+      txokey            rptxokey;
+      txokey            vtxokey;
+      sfaddress         sfaddr;
+      time_point        vote_tp;
+      uint64_t          total;
+
+      uint64_t primary_key() const
+      {
+         return (prmrid);
+      }
+
+      checksum256 index_by_txid() const
+      {
+         return (vtxokey.txid);
+      }
+
+      uint8_t get_tx_outidx() const
+      {
+         return (vtxokey.outidx);
+      }
+
+      EOSLIB_SERIALIZE( f3sf5vtxo, (prmrid)(rptxokey)(vtxokey)(sfaddr)(vote_tp)(total) )
+   };
+
+   typedef eosio::multi_index<"f3sf5vtxo"_n, f3sf5vtxo, 
+      indexed_by<"by3txid"_n, const_mem_fun<f3sf5vtxo, checksum256, &f3sf5vtxo::index_by_txid>>
+   > type_table__f3sf5vtxo;
+
+
+
+   ////////////////////////////////////////////////////////
+
    struct [[eosio::table,eosio::contract("eosio.system")]] sfaddr2accnt {
       uint64_t          prmrid;         //auto increament
       sfaddress         sfaddr;
