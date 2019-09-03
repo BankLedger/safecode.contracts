@@ -50,7 +50,7 @@ namespace eosiosystem {
 
       _sf5producers.emplace(get_self(), [&]( auto& row ) {
          row.prmrid  = _sf5producers.available_primary_key();
-         row.rptxo   = rptxo;
+         row.rptxokey= rptxo.key;
          row.ri      = sfri;
          row.enable  = true;
       });

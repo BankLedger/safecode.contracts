@@ -136,7 +136,7 @@ namespace eosiosystem {
 
    struct [[eosio::table,eosio::contract("eosio.system")]] sf5producers {
       uint64_t          prmrid;     //auto increament
-      txo               rptxo;
+      txokey            rptxokey;
       sfreginfo         ri;
       name              owner;
       uint64_t          sf_total;   //sf only
@@ -150,7 +150,7 @@ namespace eosiosystem {
 
       checksum256 index_by_txid() const
       {
-         return (rptxo.key.txid);
+         return (rptxokey.txid);
       }
 
       checksum256 index_by_pubkey() const
@@ -175,10 +175,10 @@ namespace eosiosystem {
 
       uint8_t get_tx_outidx() const
       {
-         return (rptxo.key.outidx);
+         return (rptxokey.outidx);
       }
 
-      EOSLIB_SERIALIZE( sf5producers, (prmrid)(rptxo)(ri)(enable) )
+      EOSLIB_SERIALIZE( sf5producers, (prmrid)(rptxokey)(ri)(owner)(sf_total)(total)(enable) )
    };
 
    typedef eosio::multi_index<"sf5producers"_n, sf5producers, 
@@ -250,6 +250,31 @@ namespace eosiosystem {
       EOSLIB_SERIALIZE( sc5voters, (owner)(proxy)(producer)(staked)(last_vote_tp)(last_vote_weight)(proxied_vote_weight)(is_proxy)(flags1)(reserved2)(reserved3) )
    };
    typedef eosio::multi_index< "sc5voters"_n, sc5voters >  type_table__sc5voters;
+
+   ////////////////////////////////////////////////////////
+
+   struct [[eosio::table,eosio::contract("eosio.system")]] f3sf5prods {
+      name              owner;
+      txokey            rptxokey;
+      uint8_t           dvdratio;
+      uint64_t          total;      //sf + sc
+
+      uint64_t primary_key() const
+      {
+         return (owner.value);
+      }
+
+      checksum256 index_by_txid() const
+      {
+         return (rptxokey.txid);
+      }
+
+      EOSLIB_SERIALIZE( f3sf5prods, (owner)(rptxokey)(dvdratio)(total) )
+   };
+
+   typedef eosio::multi_index<"f3sf5prods"_n, f3sf5prods, 
+      indexed_by<"by3txid"_n, const_mem_fun<f3sf5prods, checksum256, &f3sf5prods::index_by_txid>>
+   > type_table__f3sf5prods;
 
    ////////////////////////////////////////////////////////
 
