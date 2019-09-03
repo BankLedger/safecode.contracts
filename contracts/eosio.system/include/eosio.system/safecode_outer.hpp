@@ -3,73 +3,11 @@
 
 namespace eosiosystem {
 
-   struct [[eosio::contract("eosio.system")]] year3rewards {
-      uint8_t  ynr;        //base from 0
-      uint64_t amount;     //per block, unit (1E-8 SAFE)
-
-      uint64_t primary_key() const
-      {
-         return (ynr);
-      }
-
-      // explicit serialization macro is not necessary, used here only to improve compilation time
-      EOSLIB_SERIALIZE( year3rewards, (ynr)(amount) )
-   };
-   typedef eosio::multi_index<"year3rewards"_n, year3rewards> type_table__year3rewards;
-
+   //######################################################
    ////////////////////////////////////////////////////////
-
-   struct [[eosio::contract("eosio.system")]] global4vote {
-
-      uint32_t    last_sch_ver;
-      uint32_t    active_timestamp;
-      uint32_t    last_calc_rewards_timestamp;
-      uint64_t    last_unpaid_rewards;
-      uint32_t    last_unpaid_block;
-      uint32_t    last_claim_week;
-      bool        last_top40bp_votes_change;
-      uint32_t    sf_atom_id;
-      uint32_t    sf_block_num;
-      uint16_t    sf_tx_index;
-
-      // explicit serialization macro is not necessary, used here only to improve compilation time
-      EOSLIB_SERIALIZE( global4vote, (last_sch_ver)(active_timestamp)(last_calc_rewards_timestamp)
-         (last_unpaid_rewards)(last_unpaid_block)(last_claim_week)(last_top40bp_votes_change)
-         (sf_atom_id)(sf_block_num)(sf_tx_index) )
-   };
-   typedef eosio::singleton< "global4vote"_n, global4vote >   global4vote_singleton;
-
+   //common data type
    ////////////////////////////////////////////////////////
-
-
-
-   ////////////////////////////////////////////////////////
-
-   struct [[eosio::contract("eosio.system")]] sc5rewards {
-
-      struct year_rewards {
-         uint8_t  ynr;        //base from 0
-         uint64_t amount;
-      };
-
-      block_timestamp      base_bt;
-      year_rewards         yrewards_list[2];
-
-      void print() const
-      {
-         eosio::print("base_bt(sec) = "); eosio::print(base_bt.to_time_point().sec_since_epoch()); eosio::print("\n");
-         eosio::print("yrewards_list = ");
-         for( int i=0; i<sizeof(yrewards_list); ++i ) {
-            eosio::print_f("[%]%|", yrewards_list[i].ynr, yrewards_list[i].amount);
-         }
-         eosio::print("\n");
-      }
-
-      uint64_t get_amount(const block_timestamp& bt1, const block_timestamp& bt2);
-   };
-   typedef eosio::singleton< "sc5rewards"_n, sc5rewards >   sc5rewards_singleton;
-   
-   ////////////////////////////////////////////////////////
+   //######################################################
 
    struct sfaddress {  //main-chain account obj
       std::string       str;
@@ -113,6 +51,12 @@ namespace eosiosystem {
       EOSLIB_SERIALIZE( txo, (key)(quantity)(from)(type)(tp) )
    };
 
+   struct sf5key {
+      uint32_t          atom_id;
+      uint32_t          next_block_num;
+      uint32_t          next_tx_index;
+   };
+
    ////////////////////////////////////////////////////////
 
    struct sfreginfo {
@@ -133,6 +77,76 @@ namespace eosiosystem {
 
       EOSLIB_SERIALIZE( sfreginfo, (sc_pubkey)(dvdratio)(infohash)(sc_sig) )
    };
+
+   //######################################################
+   ////////////////////////////////////////////////////////
+   //struct and table
+   ////////////////////////////////////////////////////////
+   //######################################################
+
+   struct [[eosio::contract("eosio.system")]] year3rewards {
+      uint8_t  ynr;        //base from 0
+      uint64_t amount;     //per block, unit (1E-8 SAFE)
+
+      uint64_t primary_key() const
+      {
+         return (ynr);
+      }
+
+      // explicit serialization macro is not necessary, used here only to improve compilation time
+      EOSLIB_SERIALIZE( year3rewards, (ynr)(amount) )
+   };
+   typedef eosio::multi_index<"year3rewards"_n, year3rewards> type_table__year3rewards;
+
+   ////////////////////////////////////////////////////////
+
+   struct [[eosio::contract("eosio.system")]] global4vote {
+
+      uint32_t    last_sch_ver;
+      uint32_t    active_timestamp;
+      uint32_t    last_calc_rewards_timestamp;
+      uint64_t    last_unpaid_rewards;
+      uint32_t    last_unpaid_block;
+      uint32_t    last_claim_week;
+      bool        last_top40bp_votes_change;
+      uint32_t    sf_atom_id;
+      uint32_t    sf_block_num;
+      uint16_t    sf_tx_index;
+
+      // explicit serialization macro is not necessary, used here only to improve compilation time
+      EOSLIB_SERIALIZE( global4vote, (last_sch_ver)(active_timestamp)(last_calc_rewards_timestamp)
+         (last_unpaid_rewards)(last_unpaid_block)(last_claim_week)(last_top40bp_votes_change)
+         (sf_atom_id)(sf_block_num)(sf_tx_index) )
+   };
+   typedef eosio::singleton< "global4vote"_n, global4vote >   global4vote_singleton;
+
+   ////////////////////////////////////////////////////////
+
+   struct [[eosio::contract("eosio.system")]] sc5rewards {
+
+      struct year_rewards {
+         uint8_t  ynr;        //base from 0
+         uint64_t amount;
+      };
+
+      block_timestamp      base_bt;
+      year_rewards         yrewards_list[2];
+
+      void print() const
+      {
+         eosio::print("base_bt(sec) = "); eosio::print(base_bt.to_time_point().sec_since_epoch()); eosio::print("\n");
+         eosio::print("yrewards_list = ");
+         for( int i=0; i<sizeof(yrewards_list); ++i ) {
+            eosio::print_f("[%]%|", yrewards_list[i].ynr, yrewards_list[i].amount);
+         }
+         eosio::print("\n");
+      }
+
+      uint64_t get_amount(const block_timestamp& bt1, const block_timestamp& bt2);
+   };
+   typedef eosio::singleton< "sc5rewards"_n, sc5rewards >   sc5rewards_singleton;
+   
+   ////////////////////////////////////////////////////////
 
    struct [[eosio::table,eosio::contract("eosio.system")]] sf5producers {
       uint64_t          prmrid;     //auto increament
@@ -423,6 +437,55 @@ namespace eosiosystem {
 
    ////////////////////////////////////////////////////////
 
+   struct [[eosio::contract("eosio.system")]] rewards4bp {
+      name              owner;
+      uint64_t          period;
+      uint64_t          unclaimed;
+
+      uint64_t primary_key() const
+      {
+         return (owner.value);
+      }
+
+      // explicit serialization macro is not necessary, used here only to improve compilation time
+      EOSLIB_SERIALIZE( rewards4bp, (owner)(period)(unclaimed) )
+   };
+   typedef eosio::multi_index<"rewards4bp"_n, rewards4bp> type_table__rewards4bp;
+
+   ////////////////////////////////////////////////////////
+
+   struct [[eosio::contract("eosio.system")]] rewards4v {
+      uint64_t          prmrid;
+      sfaddress         sfaddr;
+      name              owner;
+      uint64_t          period;
+      uint64_t          unclaimed;
+
+      uint64_t primary_key() const
+      {
+         return (prmrid);
+      }
+
+      checksum256 index_by_sfaddr() const
+      {
+         return eosio::sha256( sfaddr.str.c_str(), sfaddr.str.length() );
+      }
+
+      uint64_t index_by_owner() const
+      {
+         return (owner.value);
+      }
+
+      // explicit serialization macro is not necessary, used here only to improve compilation time
+      EOSLIB_SERIALIZE( rewards4v, (prmrid)(sfaddr)(owner)(period)(unclaimed) )
+   };
+   typedef eosio::multi_index<"rewards4v"_n, rewards4v,
+      indexed_by<"by3sfaddr"_n, const_mem_fun<rewards4v, checksum256, &rewards4v::index_by_sfaddr>>,
+      indexed_by<"by3owner"_n, const_mem_fun<rewards4v, uint64_t, &rewards4v::index_by_owner>>
+   > type_table__rewards4v;
+
+   ////////////////////////////////////////////////////////
+
    struct [[eosio::table,eosio::contract("eosio.system")]] sfaddr2accnt {
       uint64_t          prmrid;         //auto increament
       sfaddress         sfaddr;
@@ -435,7 +498,7 @@ namespace eosiosystem {
 
       checksum256 index_by_sfaddr() const
       {
-         return eosio::sha256(sfaddr.str.c_str(), sfaddr.str.length() );
+         return eosio::sha256( sfaddr.str.c_str(), sfaddr.str.length() );
       }
 
       uint64_t index_by_account() const
