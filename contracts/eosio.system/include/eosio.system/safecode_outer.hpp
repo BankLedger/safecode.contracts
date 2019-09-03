@@ -189,15 +189,13 @@ namespace eosiosystem {
       indexed_by<"by3total"_n, const_mem_fun<sf5producers, uint64_t, &sf5producers::index_by_total>>
    > type_table__sf5producers;
 
-
    ////////////////////////////////////////////////////////
 
    struct [[eosio::table,eosio::contract("eosio.system")]] sf5vtxo {
       uint64_t          prmrid;     //auto increament
-      checksum256       rptxid;
+      txokey            rptxokey;
       txo               vtxo;
-      time_point        tp_vote;    //when voting
-      double            weight;
+      uint64_t          total;
 
       uint64_t primary_key() const
       {
@@ -214,12 +212,44 @@ namespace eosiosystem {
          return (vtxo.key.outidx);
       }
 
-      EOSLIB_SERIALIZE( sf5vtxo, (prmrid)(rptxid)(vtxo)(tp_vote)(weight) )
+      EOSLIB_SERIALIZE( sf5vtxo, (prmrid)(rptxokey)(vtxo)(total) )
    };
 
    typedef eosio::multi_index<"sf5vtxo"_n, sf5vtxo, 
       indexed_by<"by3txid"_n, const_mem_fun<sf5vtxo, checksum256, &sf5vtxo::index_by_txid>>
    > type_table__sf5vtxo;
+
+   ////////////////////////////////////////////////////////
+
+   struct [[eosio::table, eosio::contract("eosio.system")]] sc5voters {
+      name              owner;     /// the voter
+      name              proxy;     /// the proxy set by the voter, if any
+      name              producer;  /// the producer approved by this voter if no proxy set
+      int64_t           staked = 0;
+
+      time_point        last_vote_tp;
+      uint64_t          last_vote_weight = 0; /// the vote weight cast the last time the vote was updated
+
+      uint64_t          proxied_vote_weight= 0; /// the total vote weight delegated to this voter as a proxy
+      bool              is_proxy = 0; /// whether the voter is a proxy for others
+
+
+      uint32_t          flags1 = 0;
+      uint32_t          reserved2 = 0;
+      eosio::asset      reserved3;
+
+      uint64_t primary_key()const { return owner.value; }
+
+      enum class flags1_fields : uint32_t {
+         ram_managed = 1,
+         net_managed = 2,
+         cpu_managed = 4
+      };
+
+      // explicit serialization macro is not necessary, used here only to improve compilation time
+      EOSLIB_SERIALIZE( sc5voters, (owner)(proxy)(producer)(staked)(last_vote_tp)(last_vote_weight)(proxied_vote_weight)(is_proxy)(flags1)(reserved2)(reserved3) )
+   };
+   typedef eosio::multi_index< "sc5voters"_n, sc5voters >  type_table__sc5voters;
 
    ////////////////////////////////////////////////////////
 
