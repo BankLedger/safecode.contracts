@@ -342,6 +342,87 @@ namespace eosiosystem {
 
    ////////////////////////////////////////////////////////
 
+   struct [[eosio::table,eosio::contract("eosio.system")]] p3sf5prods {
+      name              owner;
+      txokey            rptxokey;
+      uint8_t           dvdratio;
+      uint64_t          unpaid_block;
+
+      uint64_t primary_key() const
+      {
+         return (owner.value);
+      }
+
+      checksum256 index_by_txid() const
+      {
+         return (rptxokey.txid);
+      }
+
+      EOSLIB_SERIALIZE( p3sf5prods, (owner)(rptxokey)(dvdratio)(unpaid_block) )
+   };
+
+   typedef eosio::multi_index<"p3sf5prods"_n, p3sf5prods, 
+      indexed_by<"by3txid"_n, const_mem_fun<p3sf5prods, checksum256, &p3sf5prods::index_by_txid>>
+   > type_table__p3sf5prods;
+
+   ////////////////////////////////////////////////////////
+
+   struct [[eosio::table,eosio::contract("eosio.system")]] p3sf5vtxo {
+      uint64_t          prmrid;     //auto increament
+      txokey            rptxokey;
+      txokey            vtxokey;
+      sfaddress         sfaddr;
+      time_point        vote_tp;
+      uint64_t          total;
+
+      uint64_t primary_key() const
+      {
+         return (prmrid);
+      }
+
+      checksum256 index_by_txid() const
+      {
+         return (vtxokey.txid);
+      }
+
+      uint8_t get_tx_outidx() const
+      {
+         return (vtxokey.outidx);
+      }
+
+      EOSLIB_SERIALIZE( p3sf5vtxo, (prmrid)(rptxokey)(vtxokey)(sfaddr)(vote_tp)(total) )
+   };
+
+   typedef eosio::multi_index<"p3sf5vtxo"_n, p3sf5vtxo, 
+      indexed_by<"by3txid"_n, const_mem_fun<p3sf5vtxo, checksum256, &p3sf5vtxo::index_by_txid>>
+   > type_table__p3sf5vtxo;
+
+   ////////////////////////////////////////////////////////
+
+   struct [[eosio::table, eosio::contract("eosio.system")]] p3voters {
+      name              owner;     /// the voter
+      name              proxy;     /// the proxy set by the voter, if any
+      name              producer;  /// the producer approved by this voter if no proxy set
+      int64_t           staked = 0;
+
+      time_point        last_vote_tp;
+      uint64_t          last_vote_weight = 0; /// the vote weight cast the last time the vote was updated
+
+      uint64_t          proxied_vote_weight= 0; /// the total vote weight delegated to this voter as a proxy
+      bool              is_proxy = 0; /// whether the voter is a proxy for others
+
+      uint64_t primary_key() const
+      {
+         return owner.value;
+      }
+
+      // explicit serialization macro is not necessary, used here only to improve compilation time
+      EOSLIB_SERIALIZE( p3voters, (owner)(proxy)(producer)(staked)(last_vote_tp)(last_vote_weight)(proxied_vote_weight)(is_proxy) )
+   };
+   typedef eosio::multi_index< "p3voters"_n, p3voters >  type_table__p3voters;
+
+   ////////////////////////////////////////////////////////
+
    struct [[eosio::table,eosio::contract("eosio.system")]] sfaddr2accnt {
       uint64_t          prmrid;         //auto increament
       sfaddress         sfaddr;
