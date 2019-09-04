@@ -21,47 +21,66 @@ namespace eosiosystem {
       return std::make_tuple(found, itr_find_tx);
    }
 
-   // void system_contract::sf5vote( const struct txo& txo, const name& producer )
-   // {
-   //    DEBUG_PRINT_VAR(txo);
-   //    DEBUG_PRINT_VAR(producer);
-
-   //    auto found_ret = findByTxo(_sf5vtxo.get_index<"by3txid"_n>(), txo);
-   //    auto found = std::get<0>(found_ret);
-   //    check( found == false, "error, txo has exists at table vtxo4sc" );
-
-   //    _sf5vtxo.emplace(get_self(), [&]( auto& row ) {
-   //       row.v_id    = _sf5vtxo.available_primary_key();
-   //       row.v_txo   = txo;
-   //       row.v_bp    = producer;
-   //       row.v_tp    = eosio::current_time_point();
-   //       row.v_weight= 0.0;
-   //    });
-   // }
-
-   void system_contract::sf5regprod( const struct txo& rptxo, const struct sfreginfo& sfri )
+   void system_contract::sf5regprod( const struct sf5key& sfkey, const struct txokey& rptxokey, const struct sfreginfo& ri, double sf_vtotal )
    {
-      auto found_ret = findByTxo(_sf5producers.get_index<"by3txid"_n>(), rptxo.key);
+      auto found_ret = findByTxo(_sf5producers.get_index<"by3txid"_n>(), rptxokey);
       auto found = std::get<0>(found_ret);
       check( found == false, "error, rptxo has exists at table sf5producers" );
-      check( rptxo.type == 1, "error, sfri.type must is 1(non-locked assert)" );
-      check( sfri.dvdratio >= 0 && sfri.dvdratio <= 100, "error, sfri.dvdratio must be in range [0, 100]" );
-      assert_recover_key( sfri.infohash, sfri.sc_sig, sfri.sc_pubkey );
+      check( ri.dvdratio >= 0 && ri.dvdratio <= 100, "error, ri.dvdratio must be in range [0, 100]" );
+      assert_recover_key( ri.infohash, ri.sc_sig, ri.sc_pubkey );
 
       _sf5producers.emplace(get_self(), [&]( auto& row ) {
-         row.prmrid  = _sf5producers.available_primary_key();
-         row.rptxokey= rptxo.key;
-         row.ri      = sfri;
-         row.enable  = true;
+         row.prmrid     = _sf5producers.available_primary_key();
+         row.rptxokey   = rptxokey;
+         row.ri         = ri;
+         row.owner      = name(0);
+         row.sf_vtotal  = sf_vtotal;
+         row.vtotal     = 0;
+         row.enable     = true;
       });
    }
 
-   void system_contract::sf5vote( const struct txokey& rptxokey, const struct txo& vtxo )
+   void system_contract::sf5unregprod( const struct sf5key& sfkey, const struct txokey& rptxokey )
    {
 
    }
 
-   void system_contract::sf5unregprod( const struct txokey& rptxokey )
+   void system_contract::sf5vote( const struct sf5key& sfkey, const struct txokey& rptxokey, const struct txo& vtxo )
+   {
+
+   }
+
+   void system_contract::sf5unvote( const struct sf5key& sfkey, const struct txokey& vtxokey )
+   {
+
+   }
+
+   void system_contract::sf5bindaccnt( const struct sf5key& sfkey, const struct sfaddress& sfaddr, const name& account )
+   {
+
+   }
+
+   void system_contract::sf5setnext( const struct sf5key& sfkey )
+   {
+
+   }
+
+   void system_contract::regproducer2( const struct txokey& rptxokey, const name& account, const signature& newsig )
+   {
+
+   }
+
+   void system_contract::sc5vote( const name& voter, const name& producer )
+   {
+
+   }
+
+   void system_contract::claim4prod( const name& producer )
+   {
+
+   }
+
+   void system_contract::claim4vote( const name& voter )
    {
 
    }
