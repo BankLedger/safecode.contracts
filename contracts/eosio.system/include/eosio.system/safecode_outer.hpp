@@ -206,7 +206,7 @@ namespace eosiosystem {
    ////////////////////////////////////////////////////////
 
    /**
-    * sf5producers: all bp's voted and enable info
+    * sf5producers: all bp(real-time)'s voted and enable info
     * @details
     * - `prmrid` primary key, owner is not set when creating
     * - `rptxokey` register bp's txokey
@@ -274,16 +274,16 @@ namespace eosiosystem {
    ////////////////////////////////////////////////////////
 
    /**
-    * sf5vtxo: all vote infoes by safe-chain
+    * sf5vtxo: all bp(real-time)'s vote infoes by safe-chain
     * @details
-    * - `prmrid` primary key, owner is not set when creating
+    * - `prmrid` primary key
     * - `rptxokey` voted target, register bp's txokey
     * - `vtxo` vote detail info
     * - `owner` bp's safecode account, set after creating
     * - `vtotal` total voting amount by safe-chain; = asset.amount * ration(1 or 1.5); unit: 1E-8 (SAFE)
     */
    struct [[eosio::table,eosio::contract("eosio.system")]] sf5vtxo {
-      uint64_t          prmrid;     //auto increament
+      uint64_t          prmrid;
       txokey            rptxokey;
       txo               vtxo;
       double            vtotal;
@@ -313,7 +313,7 @@ namespace eosiosystem {
    ////////////////////////////////////////////////////////
 
    /**
-    * sc5voters: all vote infoes by safecode-chain
+    * sc5voters: all bp(real-time)'s vote infoes by safecode-chain
     * @details
     * - `owner` voter, safecode account
     * - `producer` voted target
@@ -330,7 +330,7 @@ namespace eosiosystem {
       time_point        vote_tp;
       double            vtotal = 0; /// the vote weight cast the last time the vote was updated
 
-      uint64_t          proxied_vtotal= 0; /// the total vote weight delegated to this voter as a proxy
+      double            proxied_vtotal= 0; /// the total vote weight delegated to this voter as a proxy
       bool              is_proxy = 0; /// whether the voter is a proxy for others
 
       uint32_t          flags1 = 0;
@@ -352,11 +352,19 @@ namespace eosiosystem {
 
    ////////////////////////////////////////////////////////
 
+   /**
+    * f3sf5prods: top40 bp(forward-rotation)'s voting amount
+    * @details
+    * - `owner` bp's safecode account
+    * - `rptxokey` register bp's txokey
+    * - `dvdratio` bp's dividend percent, [0,100]
+    * - `vtotal` total voting amount by safe-chain and safecode-chain; unit: 1E-8 (SAFE)
+    */
    struct [[eosio::table,eosio::contract("eosio.system")]] f3sf5prods {
       name              owner;
       txokey            rptxokey;
       uint8_t           dvdratio;
-      uint64_t          total;      //sf + sc
+      double            vtotal;
 
       uint64_t primary_key() const
       {
@@ -368,7 +376,7 @@ namespace eosiosystem {
          return (rptxokey.txid);
       }
 
-      EOSLIB_SERIALIZE( f3sf5prods, (owner)(rptxokey)(dvdratio)(total) )
+      EOSLIB_SERIALIZE( f3sf5prods, (owner)(rptxokey)(dvdratio)(vtotal) )
    };
 
    typedef eosio::multi_index<"f3sf5prods"_n, f3sf5prods, 
@@ -377,13 +385,23 @@ namespace eosiosystem {
 
    ////////////////////////////////////////////////////////
 
+   /**
+    * f3sf5vtxo: top40 bp(forward-rotation)'s vote infoes by safe-chain
+    * @details
+    * - `prmrid` primary key
+    * - `rptxokey` voted target, register bp's txokey
+    * - `vtxokey` vtxo key
+    * - `sfaddr` vtxo's owner(address format)
+    * - `vote_tp` when do the last vote action
+    * - `vtotal` total voting amount by safe-chain; = asset.amount * ration(1 or 1.5); unit: 1E-8 (SAFE)
+    */
    struct [[eosio::table,eosio::contract("eosio.system")]] f3sf5vtxo {
-      uint64_t          prmrid;     //auto increament
+      uint64_t          prmrid;
       txokey            rptxokey;
       txokey            vtxokey;
       sfaddress         sfaddr;
       time_point        vote_tp;
-      uint64_t          total;
+      double            vtotal;
 
       uint64_t primary_key() const
       {
@@ -400,7 +418,7 @@ namespace eosiosystem {
          return (vtxokey.outidx);
       }
 
-      EOSLIB_SERIALIZE( f3sf5vtxo, (prmrid)(rptxokey)(vtxokey)(sfaddr)(vote_tp)(total) )
+      EOSLIB_SERIALIZE( f3sf5vtxo, (prmrid)(rptxokey)(vtxokey)(sfaddr)(vote_tp)(vtotal) )
    };
 
    typedef eosio::multi_index<"f3sf5vtxo"_n, f3sf5vtxo, 
@@ -409,18 +427,26 @@ namespace eosiosystem {
 
    ////////////////////////////////////////////////////////
 
+   /**
+    * f3voters: top40 bp(forward-rotation)'s vote infoes by safecode-chain
+    * @details
+    * - `owner` voter, safecode account
+    * - `producer` voted target
+    * - `staked` amount of SAFE staked to vote
+    * - `vote_tp` when do the last vote action
+    * - `vtotal` total voting amount by safecode-chain; unit: 1E-8 (SAFE)
+    */
    struct [[eosio::table, eosio::contract("eosio.system")]] f3voters {
       name              owner;     /// the voter
       name              proxy;     /// the proxy set by the voter, if any
       name              producer;  /// the producer approved by this voter if no proxy set
       int64_t           staked = 0;
 
-      time_point        last_vote_tp;
-      uint64_t          last_vote_weight = 0; /// the vote weight cast the last time the vote was updated
+      time_point        vote_tp;
+      double            vtotal = 0; /// the vote weight cast the last time the vote was updated
 
-      uint64_t          proxied_vote_weight= 0; /// the total vote weight delegated to this voter as a proxy
+      double            proxied_vtotal= 0; /// the total vote weight delegated to this voter as a proxy
       bool              is_proxy = 0; /// whether the voter is a proxy for others
-
 
       uint32_t          flags1 = 0;
       uint32_t          reserved2 = 0;
@@ -435,12 +461,20 @@ namespace eosiosystem {
       };
 
       // explicit serialization macro is not necessary, used here only to improve compilation time
-      EOSLIB_SERIALIZE( f3voters, (owner)(proxy)(producer)(staked)(last_vote_tp)(last_vote_weight)(proxied_vote_weight)(is_proxy)(flags1)(reserved2)(reserved3) )
+      EOSLIB_SERIALIZE( f3voters, (owner)(proxy)(producer)(staked)(vote_tp)(vtotal)(proxied_vtotal)(is_proxy)(flags1)(reserved2)(reserved3) )
    };
    typedef eosio::multi_index< "f3voters"_n, f3voters >  type_table__f3voters;
 
    ////////////////////////////////////////////////////////
 
+   /**
+    * p3sf5prods: top40 bp(post-rotation)'s voting amount
+    * @details
+    * - `owner` bp's safecode account
+    * - `rptxokey` register bp's txokey
+    * - `dvdratio` bp's dividend percent, [0,100]
+    * - `unpaid_block` unpaid block number within current settlement period
+    */
    struct [[eosio::table,eosio::contract("eosio.system")]] p3sf5prods {
       name              owner;
       txokey            rptxokey;
@@ -466,13 +500,23 @@ namespace eosiosystem {
 
    ////////////////////////////////////////////////////////
 
+   /**
+    * p3sf5vtxo: top40 bp(post-rotation)'s vote infoes by safe-chain
+    * @details
+    * - `prmrid` primary key
+    * - `rptxokey` voted target, register bp's txokey
+    * - `vtxokey` vtxo key
+    * - `sfaddr` vtxo's owner(address format)
+    * - `vote_tp` when do the last vote action
+    * - `vtotal` total voting amount by safe-chain; = asset.amount * ration(1 or 1.5); unit: 1E-8 (SAFE)
+    */
    struct [[eosio::table,eosio::contract("eosio.system")]] p3sf5vtxo {
-      uint64_t          prmrid;     //auto increament
+      uint64_t          prmrid;
       txokey            rptxokey;
       txokey            vtxokey;
       sfaddress         sfaddr;
       time_point        vote_tp;
-      uint64_t          total;
+      double            vtotal;
 
       uint64_t primary_key() const
       {
@@ -489,7 +533,7 @@ namespace eosiosystem {
          return (vtxokey.outidx);
       }
 
-      EOSLIB_SERIALIZE( p3sf5vtxo, (prmrid)(rptxokey)(vtxokey)(sfaddr)(vote_tp)(total) )
+      EOSLIB_SERIALIZE( p3sf5vtxo, (prmrid)(rptxokey)(vtxokey)(sfaddr)(vote_tp)(vtotal) )
    };
 
    typedef eosio::multi_index<"p3sf5vtxo"_n, p3sf5vtxo, 
@@ -498,16 +542,25 @@ namespace eosiosystem {
 
    ////////////////////////////////////////////////////////
 
+   /**
+    * p3voters: top40 bp(post-rotation)'s vote infoes by safecode-chain
+    * @details
+    * - `owner` voter, safecode account
+    * - `producer` voted target
+    * - `staked` amount of SAFE staked to vote
+    * - `vote_tp` when do the last vote action
+    * - `vtotal` total voting amount by safecode-chain; unit: 1E-8 (SAFE)
+    */
    struct [[eosio::table, eosio::contract("eosio.system")]] p3voters {
       name              owner;     /// the voter
       name              proxy;     /// the proxy set by the voter, if any
       name              producer;  /// the producer approved by this voter if no proxy set
       int64_t           staked = 0;
 
-      time_point        last_vote_tp;
-      uint64_t          last_vote_weight = 0; /// the vote weight cast the last time the vote was updated
+      time_point        vote_tp;
+      double            vtotal = 0; /// the vote weight cast the last time the vote was updated
 
-      uint64_t          proxied_vote_weight= 0; /// the total vote weight delegated to this voter as a proxy
+      double            proxied_vtotal= 0; /// the total vote weight delegated to this voter as a proxy
       bool              is_proxy = 0; /// whether the voter is a proxy for others
 
       uint64_t primary_key() const
@@ -516,12 +569,19 @@ namespace eosiosystem {
       }
 
       // explicit serialization macro is not necessary, used here only to improve compilation time
-      EOSLIB_SERIALIZE( p3voters, (owner)(proxy)(producer)(staked)(last_vote_tp)(last_vote_weight)(proxied_vote_weight)(is_proxy) )
+      EOSLIB_SERIALIZE( p3voters, (owner)(proxy)(producer)(staked)(vote_tp)(vtotal)(proxied_vtotal)(is_proxy) )
    };
    typedef eosio::multi_index< "p3voters"_n, p3voters >  type_table__p3voters;
 
    ////////////////////////////////////////////////////////
 
+   /**
+    * rewards4bp: bp(current or history)'s bpay rewards
+    * @details
+    * - `owner` bp account
+    * - `period` rewards within current period; unit: 1E-8 (SAFE)
+    * - `unclaimed` unclaimed rewards from all periods; unit: 1E-8 (SAFE)
+    */
    struct [[eosio::contract("eosio.system")]] rewards4bp {
       name              owner;
       uint64_t          period;
@@ -539,6 +599,19 @@ namespace eosiosystem {
 
    ////////////////////////////////////////////////////////
 
+   /**
+    * rewards4v: bp or voter(current or history)'s vpay rewards
+    * @details
+    * - `prmrid` primary key
+    * - `sfaddr` vtxo's owner(address format)
+    * - `owner` bp or voter's safecode-chain account
+    * - `period` rewards within current period; unit: 1E-8 (SAFE)
+    * - `unclaimed` unclaimed rewards from all periods; unit: 1E-8 (SAFE)
+    * 
+    * for bp: sfaddr="" and owner="bbb"_n
+    * for voter, before binding safecode-chain account, sfaddr="xxx" and owner=0
+    * for voter, after binding safecode-chain account, sfaddr="xxx" and owner="vvv"_n
+    */
    struct [[eosio::contract("eosio.system")]] rewards4v {
       uint64_t          prmrid;
       sfaddress         sfaddr;
@@ -571,8 +644,17 @@ namespace eosiosystem {
 
    ////////////////////////////////////////////////////////
 
+   /**
+    * sfaddr2accnt: safe-chain account map to safecode-chain account
+    * @details
+    * - `prmrid` primary key
+    * - `sfaddr` vtxo's owner(address format)
+    * - `account` safecode-chain account
+    * 
+    * `sfaddr`:`account` = n:1
+    */
    struct [[eosio::table,eosio::contract("eosio.system")]] sfaddr2accnt {
-      uint64_t          prmrid;         //auto increament
+      uint64_t          prmrid;
       sfaddress         sfaddr;
       name              account;
 
