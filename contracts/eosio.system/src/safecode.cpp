@@ -27,7 +27,6 @@ namespace eosiosystem {
       auto found = std::get<0>(found_ret);
       check( found == false, "error, rptxo has exists at table sf5producers" );
       check( ri.dvdratio >= 0 && ri.dvdratio <= 100, "error, ri.dvdratio must be in range [0, 100]" );
-      assert_recover_key( ri.infohash, ri.sc_sig, ri.sc_pubkey );
 
       _sf5producers.emplace(get_self(), [&]( auto& row ) {
          row.prmrid     = _sf5producers.available_primary_key();

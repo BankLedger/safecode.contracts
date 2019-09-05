@@ -46,7 +46,7 @@ namespace eosiosystem {
     * - `key` txo's key
     * - `quantity` txo's SAFE(only support SAFE) quantity
     * - `owner` txo's owner(address format)
-    * - `type` assert type; 0:masternode-locked; 1:non-masternode-locked, liquid
+    * - `type` assert type; 0:masternode-relation(lock or unlock); 1:otherwise
     * - `tp` when gen transaction; get it from the block timestamp.
     */
    struct txo {
@@ -93,26 +93,20 @@ namespace eosiosystem {
     * @details
     * - `sc_pubkey` safecode-chain's bp pubkey
     * - `dvdratio` bp's dividend percent, [0,100]
-    * - `infohash` hash by `sc_pubkey` to get `sc_sig`
-    * - `sc_sig` get from `sc_pubkey` signing `infohash`
     */
    struct sfreginfo {
       public_key        sc_pubkey;
       uint8_t           dvdratio;   //int: [0,100]
-      checksum256       infohash;
-      signature         sc_sig;
 
       void print() const
       {
          // eosio::print("[struct sfreginfo]obj:\n");
          // eosio::print("\tsc_pubkey = "); eosio::print(sc_pubkey); eosio::print("\n");
          // eosio::print("\tdvdratio = "); eosio::print(dvdratio); eosio::print("\n");
-         // eosio::print("\tinfohash = "); eosio::print(infohash); eosio::print("\n");
-         // eosio::print("\tsc_sig = "); eosio::print(sc_sig); eosio::print("\n");
          // eosio::print("[struct sfreginfo]end of obj\n");
       }
 
-      EOSLIB_SERIALIZE( sfreginfo, (sc_pubkey)(dvdratio)(infohash)(sc_sig) )
+      EOSLIB_SERIALIZE( sfreginfo, (sc_pubkey)(dvdratio) )
    };
 
    //######################################################
