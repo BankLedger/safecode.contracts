@@ -506,6 +506,12 @@ namespace eosiosystem {
          type_table__sf5vtxo        _sf5vtxo;
          type_table__sfaddr2accnt   _sfaddr2accnt;
          type_table__sf5producers   _sf5producers;
+         type_table__f3sf5prods     _f3sf5prods;
+         type_table__f3sf5vtxo      _f3sf5vtxo;
+         type_table__f3voters       _f3voters;
+         type_table__sc5voters      _sc5voters;
+         type_table__rewards4bp     _rewards4bp;
+         type_table__rewards4v      _rewards4v;
 
          voters_table            _voters;
          producers_table         _producers;
@@ -513,11 +519,13 @@ namespace eosiosystem {
          global_state_singleton  _global;
          global_state2_singleton _global2;
          global_state3_singleton _global3;
+         global4vote_singleton   _global4vote;
          sc5rewards_singleton    _sc5rewards;
 
          eosio_global_state      _gstate;
          eosio_global_state2     _gstate2;
          eosio_global_state3     _gstate3;
+         global4vote             _gstate4vote;
          sc5rewards              _gstate_sc5rewards;
          rammarket               _rammarket;
          rex_pool_table          _rexpool;
@@ -1268,6 +1276,7 @@ namespace eosiosystem {
          //defined in eosio.system.cpp
          static eosio_global_state get_default_parameters();
          static sc5rewards get_default_sc5rewards();
+         static global4vote get_default_global4vote();
          symbol core_symbol()const;
          void update_ram_supply();
 
