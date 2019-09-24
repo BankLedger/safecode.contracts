@@ -108,7 +108,7 @@ namespace eosiosystem {
     */
    struct sfreginfo {
       public_key        sc_pubkey;
-      uint8_t           dvdratio;   //int: [0,100]
+      uint8_t           dvdratio;   //int: [0,100],XJTODO,update dvdratio need update p3sf5
 
       void print() const
       {

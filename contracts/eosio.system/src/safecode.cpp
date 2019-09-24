@@ -6,6 +6,22 @@ namespace eosiosystem {
 
    using eosio::check;
 
+    global4vote system_contract::get_default_global4vote() {
+        global4vote ret;
+        ret.last_sch_ver = 0;
+        ret.active_timestamp = 0;
+        ret.last_calc_rewards_timestamp = 0;
+        ret.last_set_proposed_producers_timestamp = 0;
+        ret.last_unpaid_rewards = 0;
+        ret.last_unpaid_block = 0;
+        ret.last_claim_week = 0;
+        ret.last_top40bp_votes_change = false;
+        ret.sf_atom_id = 0;
+        ret.sf_block_num = 0;
+        ret.sf_tx_index = 0;
+        return (ret);
+    }
+
    template< typename TableIndex >
    auto system_contract::findByTxo( const TableIndex& tbl_index, const struct txokey& txokey )
    {
@@ -22,7 +38,7 @@ namespace eosiosystem {
    }
 
    template< typename TableIndex,typename Index>
-   auto system_contract::findByIdx( const TableIndex& tbl_index, const Index& index )
+   auto system_contract::findByUniqueIdx( const TableIndex& tbl_index, const Index& index )
    {
        auto itr_find_index = tbl_index.lower_bound(index);
        auto itr_find_index_up = tbl_index.upper_bound(index);
@@ -37,6 +53,14 @@ namespace eosiosystem {
        return false;
    }
 
+   bool system_contract::negative_dvalue_equals_zero(const double& dvalue)
+   {
+       if(dvalue>=-0.00000001&&dvalue<0){
+           return true;
+       }
+       return false;
+   }
+
    void system_contract::sf5regprod( const struct sf5key& sfkey, const struct txokey& rptxokey, const struct sfreginfo& ri )
    {
       setnext(sfkey);
@@ -44,7 +68,7 @@ namespace eosiosystem {
       auto found = std::get<0>(found_ret);
       check( found == false, "error,sf5regprod:rptxo has exists at table sf5producers" );
       check( ri.dvdratio >= 0 && ri.dvdratio <= 100, "error, ri.dvdratio must be in range [0, 100]" );
-      auto found_pubkey_ret = findByIdx(_sf5producers.get_index<"by3pubkey"_n>(),eosio::sha256(ri.sc_pubkey.data.begin(), ri.sc_pubkey.data.size()));
+      auto found_pubkey_ret = findByUniqueIdx(_sf5producers.get_index<"by3pubkey"_n>(),eosio::sha256(ri.sc_pubkey.data.begin(), ri.sc_pubkey.data.size()));
       auto found_pubkey = std::get<0>(found_pubkey_ret);
       check(found_pubkey == false, "error,sf5regprod:pubkey has exists at table sf5producers");
 
@@ -74,7 +98,14 @@ namespace eosiosystem {
             row.enable = false;
        });
 
-       eosio::print("sf5unregprod:unregist bp:[",rptxokey.txid,",",rptxokey.outidx,"]\n");
+       //unregprod top40,update flag
+       auto prods_txid_ret = findByTxo(_f3sf5prods.get_index<"by3txid"_n>(),rptxokey);
+       auto exists = std::get<0>(prods_txid_ret);
+       if(exists){
+           _gstate4vote.last_top40bp_votes_change = true;
+       }
+
+       eosio::print("sf5unregprod:unregist bp:[",rptxokey.txid,",",rptxokey.outidx,"],top40:",exists,"\n");
    }
 
    void system_contract::update_bp_votes(bool add, const struct txokey& rptxokey,const double& votes,const struct txo& vtxo)
@@ -86,7 +117,7 @@ namespace eosiosystem {
        check( producer_found, "error,update_bp_votes:rptxo has not exists at table sf5producers" );
 
        auto itr = std::get<1>(found_txid_ret);
-       auto producer_sf_vtotal = 0.0,producer_vtotal = 0.0;
+       double producer_sf_vtotal = 0.0,producer_vtotal = 0.0;
        txid_idx.modify(itr, get_self(), [&]( auto& row ) {
            if(add)
            {
@@ -96,6 +127,14 @@ namespace eosiosystem {
            {
                row.sf_vtotal -= votes;
                row.vtotal -= votes;
+               if(negative_dvalue_equals_zero(row.sf_vtotal)){
+                   row.sf_vtotal = 0;
+               }
+               if(negative_dvalue_equals_zero(row.vtotal)){
+                   row.vtotal = 0;
+               }
+               check(row.sf_vtotal>=0,"row.sf_vtotal less than 0");
+               check(row.vtotal>=0,"row.sf_vtotal less than 0");
            }
            producer_sf_vtotal = row.sf_vtotal;
            producer_vtotal = row.vtotal;
@@ -164,11 +203,12 @@ namespace eosiosystem {
        update_bp_votes(false,rptxokey,vtotal,vtxo);
    }
 
+   //XJTODO test pre bind,test after bind
    void system_contract::sf5bindaccnt( const struct sf5key& sfkey, const struct sfaddress& sfaddr, const name& account )
    {
        require_auth(account);
        setnext(sfkey);
-       auto found_ret = findByIdx(_sfaddr2accnt.get_index<"by3sfaddr"_n>(),eosio::sha256( sfaddr.str.c_str(), sfaddr.str.length() ));
+       auto found_ret = findByUniqueIdx(_sfaddr2accnt.get_index<"by3sfaddr"_n>(),eosio::sha256( sfaddr.str.c_str(), sfaddr.str.length() ));
        auto found = std::get<0>(found_ret);
        check (found==false,("error, sf5bindaccnt:repeat bind,sfaddr " + sfaddr.str +" has exists at table sfaddr2accnt").data());
 
@@ -177,6 +217,8 @@ namespace eosiosystem {
            row.sfaddr = sfaddr;
            row.account = account;
        });
+
+       //XJTODO,update rewards4v owner
 
        eosio::print("sf5bindaccnt:bind safe addr ",sfaddr.str," to account ",account,"\n");
    }
@@ -196,10 +238,16 @@ namespace eosiosystem {
        setnext(sfkey);
    }
 
+   //XJTODO for test
    void system_contract::resetg4vote()
    {
        _gstate4vote = get_default_global4vote();
        eosio::print("resetg4vote");
+   }
+
+   void system_contract::sf5pubkhash(const public_key& sc_pubkey)
+   {
+       eosio::print("pubkey hash:",eosio::sha256(sc_pubkey.data.begin(), sc_pubkey.data.size()),"\n");
    }
 
    void system_contract::regproducer2( const struct txokey& rptxokey, const name& account, const signature& newsig )
@@ -212,7 +260,7 @@ namespace eosiosystem {
        check( found, "error,regproducer2:rptxo has exists at table sf5producers" );
 
        //2.account need be unique
-       auto account_found_ret = findByIdx(_sf5producers.get_index<"by3owner"_n>(),account.value);
+       auto account_found_ret = findByUniqueIdx(_sf5producers.get_index<"by3owner"_n>(),account.value);
        auto account_found = std::get<0>(account_found_ret);
        check (account_found==false,"error, regproducer2:account has exists at table sf5producers");
 
@@ -234,11 +282,11 @@ namespace eosiosystem {
        //1.check producer exists
        require_auth(voter);
        auto owner_idx = _sf5producers.get_index<"by3owner"_n>();
-       auto found_ret = findByIdx(owner_idx,producer.value);
+       auto found_ret = findByUniqueIdx(owner_idx,producer.value);
        auto found = std::get<0>(found_ret);
        check( found, ( "error,sc5vote:producer " + producer.to_string() + " is not registered" ).data() );
 
-       int64_t curr_staked = 60000000000;//XJTODO
+       int64_t curr_staked = 600'00000000;//XJTODO
 
        bool add_vote = true;
        bool repeat_vote = true;
@@ -262,6 +310,7 @@ namespace eosiosystem {
            add_vote = false;
            _sc5voters.modify(itr, get_self(), [&]( auto& row ) {
                last_producer = row.producer;
+               //XJTODO,first stake 100,then vote,finally add new stake 100,may be add a undo_staked
                last_staked = row.staked;
                if(row.staked != curr_staked || last_producer!=producer)
                {
@@ -276,7 +325,7 @@ namespace eosiosystem {
            if(last_producer!=producer)
            {
                auto last_owner_idx = _sf5producers.get_index<"by3owner"_n>();
-               auto last_found_ret = findByIdx(last_owner_idx,last_producer.value);
+               auto last_found_ret = findByUniqueIdx(last_owner_idx,last_producer.value);
                auto last_found = std::get<0>(last_found_ret);
                check( last_found, ( "error,sc5vote:last producer "+last_producer.to_string()+" is not registered" ).data());
                auto itr_owner = std::get<1>(last_found_ret);
@@ -290,14 +339,19 @@ namespace eosiosystem {
                auto itr_owner = std::get<1>(found_ret);
                owner_idx.modify(itr_owner, get_self(), [&]( auto& row ) {
                    row.vtotal -= last_staked;
+                   if(negative_dvalue_equals_zero(row.vtotal)){
+                       row.vtotal = 0;
+                   }
+                   check(row.vtotal>=0,"row.sf_vtotal less than 0");
                    last_producer_vtotal = row.vtotal;
                });
            }
 
            if(!_gstate4vote.last_top40bp_votes_change)
            {
-               if(!repeat_vote&&(std::get<0>(findByIdx(_f3sf5prods.get_index<"by3owner"_n>(),last_producer.value))||
-                                 std::get<0>(findByIdx(_f3sf5prods.get_index<"by3owner"_n>(),producer.value))))
+               if(!repeat_vote&&
+                   (std::get<0>(findByUniqueIdx(_f3sf5prods.get_index<"by3owner"_n>(),last_producer.value))||
+                   std::get<0>(findByUniqueIdx(_f3sf5prods.get_index<"by3owner"_n>(),producer.value))))
                {
                    _gstate4vote.last_top40bp_votes_change = true;
                }
@@ -322,7 +376,7 @@ namespace eosiosystem {
    {
 /*
         require_auth(producer);
-        auto found_ret = findByIdx(_sf5producers.get_index<"by3owner"_n>(),producer.value);
+        auto found_ret = findByUniqueIdx(_sf5producers.get_index<"by3owner"_n>(),producer.value);
         auto found = std::get<0>(found_ret);
         check( found, ( "producer " + producer.to_string() + " is not registered" ).data() );
 
@@ -492,17 +546,17 @@ namespace eosiosystem {
            uint32_t same_producer_count = 0;
            while(itr_producers!=producers_idx.rend()&&itr_prods!=prods_idx.rend())
            {
-               if(itr_producers->owner.value==0||!itr_producers->enable)
+               if(itr_producers->owner.value==0||!itr_producers->enable||!dvalue_bigger_than_zero(itr_producers->sf_vtotal))
                {
                    ++itr_producers;
                    continue;
                }
-               if(itr_prods->owner.value==0)//in normal,it can't be 0
+               if(itr_prods->owner.value==0||!dvalue_bigger_than_zero(itr_producers->vtotal))//in normal,owner can't be 0
                {
                    ++itr_prods;
                    continue;
                }
-               if(itr_producers->rptxokey.txid!=itr_prods->rptxokey.txid||itr_producers->rptxokey.outidx!=itr_prods->rptxokey.outidx)
+               if(itr_producers->owner!=itr_prods->owner)
                {
                    need_new_sch_prods = true;
                    eosio::print("top40 sf5producers not equals to f3sf5prods.");

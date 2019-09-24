@@ -56,6 +56,10 @@
       [[eosio::action]]
       void sf5setnext( const struct sf5key& sfkey );
 
+      [[eosio::action]]
+      void sf5pubkhash( const public_key& sc_pubkey );
+
+
       //######################################################
       ////////////////////////////////////////////////////////
       //[[eosio::action]] called by safecode-side
@@ -93,9 +97,11 @@
       auto findByTxo( const TableIndex& tbl_index, const struct txokey& txokey );
 
       template< typename TableIndex,typename Index>
-      auto findByIdx( const TableIndex& tbl_index, const Index& index );
+      auto findByUniqueIdx( const TableIndex& tbl_index, const Index& index );
 
       bool dvalue_bigger_than_zero(const double& dvalue);
+
+      bool negative_dvalue_equals_zero(const double& dvalue);
 
       void update_bp_votes(bool insert, const struct txokey& rptxokey,const double& votes,const struct txo& vtxo);
 

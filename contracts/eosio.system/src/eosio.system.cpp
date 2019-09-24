@@ -58,22 +58,6 @@ namespace eosiosystem {
       return (ret);
    }
 
-   global4vote system_contract::get_default_global4vote() {
-       global4vote ret;
-       ret.last_sch_ver = 0;
-       ret.active_timestamp = 0;
-       ret.last_calc_rewards_timestamp = 0;
-       ret.last_set_proposed_producers_timestamp = 0;
-       ret.last_unpaid_rewards = 0;
-       ret.last_unpaid_block = 0;
-       ret.last_claim_week = 0;
-       ret.last_top40bp_votes_change = false;
-       ret.sf_atom_id = 0;
-       ret.sf_block_num = 0;
-       ret.sf_tx_index = 0;
-       return (ret);
-   }
-
    symbol system_contract::core_symbol()const {
       const static auto sym = get_core_symbol( _rammarket );
       return sym;
