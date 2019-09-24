@@ -85,7 +85,7 @@ void token::transfer( const name&    from,
     auto sym = quantity.symbol.code();
     stats statstable( get_self(), sym.raw() );
     const auto& st = statstable.get( sym.raw() );
-
+ 
     require_recipient( from );
     require_recipient( to );
 
@@ -93,11 +93,56 @@ void token::transfer( const name&    from,
     check( quantity.amount > 0, "must transfer positive quantity" );
     check( quantity.symbol == st.supply.symbol, "symbol precision mismatch" );
     check( memo.size() <= 256, "memo has more than 256 bytes" );
-
+    
     auto payer = has_auth( to ) ? to : from;
 
-    sub_balance( from, quantity );
-    add_balance( to, quantity, payer );
+   // 校验
+   if(to == "safe.oracle"_n) {
+      check(memo.size() >= 39, "Unlawful memo");
+      std::vector<std::string> memo_list = split(memo, ' ');
+      std::vector<std::string> first_str_list = split(memo_list[0], '@');
+      check(first_str_list.size() >= 2, "Unlawful memo");
+      check(first_str_list[0] == "XazueUj1Qhp6AEq5ULtBWUTGKeo1ers4Pc", "Unlawful memo");
+      check(first_str_list[1] == "SAFE", "Unlawful memo");
+   }
+  
+   // 查表  
+   asset fee_quantity = asset(100000, symbol("SAFE", 8)); 
+   accounts from_acnts( get_self(), from.value );
+   const auto& from_safe = from_acnts.get( fee_quantity.symbol.code().raw(), "no balance object found" );
+   check( from_safe.balance.amount >= fee_quantity.amount, "overdrawn balance" );
+   
+   if (quantity.symbol.code().raw() == fee_quantity.symbol.code().raw()) { // SAFE
+      if(from_safe.balance.amount >= quantity.amount + fee_quantity.amount) {  
+         sub_balance( from, quantity+fee_quantity);
+
+         if(to == "safe.oracle"_n) {
+            des_asset(quantity);
+         } else {
+            add_balance( to, quantity, payer );
+         }
+      } else {
+         sub_balance(from, quantity);
+
+         if(to == "safe.oracle"_n) {
+            des_asset(quantity-fee_quantity);
+         } else {
+            add_balance( to, quantity-fee_quantity, payer );
+         }
+      }
+   } else { // Asset
+      sub_balance( from, quantity );
+      sub_balance( from, fee_quantity);
+      if(to == "safe.oracle"_n) {
+         des_asset(quantity);
+      } else {
+         add_balance( to, quantity, payer );
+      }
+   }
+   add_balance("safe.ettfee"_n, fee_quantity, payer);
+   
+    //sub_balance( from, quantity );
+    //add_balance( to, quantity, payer );
 }
 
 void token::sub_balance( const name& owner, const asset& value ) {
@@ -233,6 +278,44 @@ void token::casttransfer( const name&    from,
 
    sub_balance( from, quantity );
    add_balance( to, quantity, payer );
+}
+
+
+void token::des_asset(const asset&   quantity) {
+   auto sym = quantity.symbol;
+   check( sym.is_valid(), "invalid symbol name" );
+   check( quantity.is_valid(), "invalid supply");
+   check( quantity.amount > 0, "quantity must be positive");
+
+   stats statstable( get_self(), sym.code().raw() );
+   auto existing = statstable.find( sym.code().raw() );
+   check( existing != statstable.end(), "token with symbol not exists" );
+   const auto& st = *existing;
+
+   check( st.supply.amount >= quantity.amount, "overdrawn asset");
+   check( st.max_supply.amount >= quantity.amount, "overdrawn asset");
+   
+   statstable.modify( st, same_payer, [&]( auto& s ) {
+      s.supply -= quantity;
+      s.max_supply -= quantity;
+   });
+}
+
+vector<string> token::split(const string& s, const char& t) {
+   string buff;
+   vector<string> z;
+   for(auto c: s) {
+      if (c != t) {
+         buff += c;
+      } else {
+         z.push_back(buff);
+         buff.clear();
+      }
+   }
+   if(!buff.empty()) {
+      z.push_back(buff);
+   }
+   return z;
 }
 
 } /// namespace eosio
