@@ -98,21 +98,21 @@ void token::transfer( const name&    from,
 
    // 校验
    if(to == "safe.oracle"_n) {
-      check(memo.size() >= 39, "Unlawful memo");
+      check(memo.size() >= 39, "Unlawful memo"); // linke: XazueUj1Qhp6AEq5ULtBWUTGKeo1ers4Pc@SAFE
       std::vector<std::string> memo_list = split(memo, ' ');
       std::vector<std::string> first_str_list = split(memo_list[0], '@');
       check(first_str_list.size() >= 2, "Unlawful memo");
-      check(first_str_list[0] == "XazueUj1Qhp6AEq5ULtBWUTGKeo1ers4Pc", "Unlawful memo");
       check(first_str_list[1] == "SAFE", "Unlawful memo");
    }
   
    // 查表  
-   asset fee_quantity = asset(100000, symbol("SAFE", 8)); 
+   asset fee_quantity = asset(100000, symbol("SAFE", 8)); // "0.001SAFE"
    accounts from_acnts( get_self(), from.value );
    const auto& from_safe = from_acnts.get( fee_quantity.symbol.code().raw(), "no balance object found" );
-   check( from_safe.balance.amount >= fee_quantity.amount, "overdrawn balance" );
    
    if (quantity.symbol.code().raw() == fee_quantity.symbol.code().raw()) { // SAFE
+      check( from_safe.balance.amount > fee_quantity.amount, "overdrawn balance" );
+
       if(from_safe.balance.amount >= quantity.amount + fee_quantity.amount) {  
          sub_balance( from, quantity+fee_quantity);
 
@@ -131,6 +131,8 @@ void token::transfer( const name&    from,
          }
       }
    } else { // Asset
+      check( from_safe.balance.amount >= fee_quantity.amount, "overdrawn balance" );
+      
       sub_balance( from, quantity );
       sub_balance( from, fee_quantity);
       if(to == "safe.oracle"_n) {
@@ -280,7 +282,7 @@ void token::casttransfer( const name&    from,
    add_balance( to, quantity, payer );
 }
 
-
+/// destruction asset
 void token::des_asset(const asset&   quantity) {
    auto sym = quantity.symbol;
    check( sym.is_valid(), "invalid symbol name" );
