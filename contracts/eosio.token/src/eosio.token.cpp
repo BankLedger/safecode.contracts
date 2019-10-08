@@ -2,6 +2,9 @@
 
 namespace eosio {
 
+const name token::ettfee_account = "safe.ettfee"_n;
+const asset token::ettfee = asset(100000, symbol("SAFE", 8)); // "0.001SAFE"
+
 void token::create( const name&   issuer,
                     const asset&  maximum_supply )
 {
@@ -79,72 +82,39 @@ void token::transfer( const name&    from,
                       const asset&   quantity,
                       const string&  memo )
 {
-    check( from != to, "cannot transfer to self" );
-    require_auth( from );
-    check( is_account( to ), "to account does not exist");
-    auto sym = quantity.symbol.code();
-    stats statstable( get_self(), sym.raw() );
-    const auto& st = statstable.get( sym.raw() );
+   check( from != to, "cannot transfer to self" );
+   require_auth( from );
+   check( is_account( to ), "to account does not exist");
+   auto sym = quantity.symbol.code();
+   stats statstable( get_self(), sym.raw() );
+   const auto& st = statstable.get( sym.raw() );
  
-    require_recipient( from );
-    require_recipient( to );
+   require_recipient( from );
+   require_recipient( to );
 
-    check( quantity.is_valid(), "invalid quantity" );
-    check( quantity.amount > 0, "must transfer positive quantity" );
-    check( quantity.symbol == st.supply.symbol, "symbol precision mismatch" );
-    check( memo.size() <= 256, "memo has more than 256 bytes" );
-    
-    auto payer = has_auth( to ) ? to : from;
-
-   // 校验
-   if(to == "safe.oracle"_n) {
-      check(memo.size() >= 39, "Unlawful memo"); // linke: XazueUj1Qhp6AEq5ULtBWUTGKeo1ers4Pc@SAFE
-      std::vector<std::string> memo_list = split(memo, ' ');
-      std::vector<std::string> first_str_list = split(memo_list[0], '@');
-      check(first_str_list.size() >= 2, "Unlawful memo");
-      check(first_str_list[1] == "SAFE", "Unlawful memo");
-   }
-  
-   // 查表  
-   asset fee_quantity = asset(100000, symbol("SAFE", 8)); // "0.001SAFE"
-   accounts from_acnts( get_self(), from.value );
-   const auto& from_safe = from_acnts.get( fee_quantity.symbol.code().raw(), "no balance object found" );
+   check( quantity.is_valid(), "invalid quantity" );
+   check( quantity.amount > 0, "must transfer positive quantity" );
+   check( quantity.symbol == st.supply.symbol, "symbol precision mismatch" );
+   check( memo.size() <= 256, "memo has more than 256 bytes" );
    
-   if (quantity.symbol.code().raw() == fee_quantity.symbol.code().raw()) { // SAFE
-      check( from_safe.balance.amount > fee_quantity.amount, "overdrawn balance" );
+   auto payer = has_auth( to ) ? to : from;
 
-      if(from_safe.balance.amount >= quantity.amount + fee_quantity.amount) {  
-         sub_balance( from, quantity+fee_quantity);
-
-         if(to == "safe.oracle"_n) {
-            des_asset(quantity);
-         } else {
-            add_balance( to, quantity, payer );
-         }
-      } else {
-         sub_balance(from, quantity);
-
-         if(to == "safe.oracle"_n) {
-            des_asset(quantity-fee_quantity);
-         } else {
-            add_balance( to, quantity-fee_quantity, payer );
-         }
-      }
-   } else { // Asset
-      check( from_safe.balance.amount >= fee_quantity.amount, "overdrawn balance" );
-      
-      sub_balance( from, quantity );
-      sub_balance( from, fee_quantity);
-      if(to == "safe.oracle"_n) {
-         des_asset(quantity);
-      } else {
-         add_balance( to, quantity, payer );
-      }
+   //step 1: check bccta memo
+   if( to == "safe.oracle"_n ) {
+      check_bccta_memo( memo );
    }
-   add_balance("safe.ettfee"_n, fee_quantity, payer);
-   
-    //sub_balance( from, quantity );
-    //add_balance( to, quantity, payer );
+
+   //step 2: pay ettfee
+   collect_ettfee( from, payer );
+
+   //step 3: receiver add balance or destroy asset before bccta
+   sub_balance( from, quantity );
+   if( to == "safe.oracle"_n ) {
+      des_asset( quantity );
+   } else {
+      add_balance( to, quantity, payer );
+   }
+
 }
 
 void token::sub_balance( const name& owner, const asset& value ) {
@@ -283,7 +253,7 @@ void token::casttransfer( const name&    from,
 }
 
 /// destruction asset
-void token::des_asset(const asset&   quantity) {
+void token::des_asset( const asset& quantity ) {
    auto sym = quantity.symbol;
    check( sym.is_valid(), "invalid symbol name" );
    check( quantity.is_valid(), "invalid supply");
@@ -303,7 +273,35 @@ void token::des_asset(const asset&   quantity) {
    });
 }
 
-vector<string> token::split(const string& s, const char& t) {
+void token::collect_ettfee( const name& from, const name& ram_payer )
+{
+   if( token::ettfee.amount == 0 ) {
+      return;
+   }
+
+   {  //like: //sub_balance( from, token::ettfee );
+      accounts from_acnts( get_self(), from.value );
+      const auto& from_safe = from_acnts.get( token::ettfee.symbol.code().raw(), "no SAFE balance object found" );
+      check( from_safe.balance.amount >= token::ettfee.amount, "from.safe.balance must >= ettfee" );
+
+      from_acnts.modify( from_safe, from, [&]( auto& a ) {
+         a.balance -= token::ettfee;
+      });
+   }
+
+   add_balance( token::ettfee_account, token::ettfee, ram_payer );
+}
+
+void token::check_bccta_memo( const string& memo )
+{
+   check(memo.size() >= 39, "invalid memo, must more than 39 bytes"); // like: XazueUj1Qhp6AEq5ULtBWUTGKeo1ers4Pc@SAFE
+   auto memo_list = split(memo, ' ');
+   auto first_str_list = split(memo_list[0], '@');
+   check(first_str_list.size() >= 2, "invalid memo, must contain at least one '@'");
+   check(first_str_list[1] == "SAFE", "invalid memo, BCCTA's target chain name must be 'SAFE'");
+}
+
+vector<string> token::split( const string& s, const char t ) {
    string buff;
    vector<string> z;
    for(auto c: s) {
