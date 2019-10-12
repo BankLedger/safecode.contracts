@@ -12,13 +12,24 @@ namespace eosiosystem {
 
       require_auth(get_self());
 
-      //sc onblock
-      updates3sf5();
-      return;
-
       block_timestamp timestamp;
       name producer;
-      _ds >> timestamp >> producer;
+      uint16_t confirmed;
+      checksum256 previous;
+      checksum256 transaction_mroot;
+      checksum256 action_mroot;
+      uint32_t schedule_version;
+      _ds >> timestamp >> producer >> confirmed >> previous >> transaction_mroot >> action_mroot >> schedule_version;
+
+      //sc onblock
+      uint32_t block_time = timestamp.to_time_point().sec_since_epoch();
+      bool soft_trigger_calc_reward = false;
+      update_s3sf5(block_time,soft_trigger_calc_reward);
+      record_block_rewards(producer);
+      settlement_rewards(schedule_version,block_time,soft_trigger_calc_reward);
+      //update_p3sf5(schedule_version,block_time,soft_trigger_calc_reward,producer);
+
+      return;
 
       // _gstate2.last_block_num is not used anywhere in the system contract code anymore.
       // Although this field is deprecated, we will continue updating it for now until the last_block_num field

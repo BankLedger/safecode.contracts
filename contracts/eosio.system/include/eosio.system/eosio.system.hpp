@@ -510,8 +510,12 @@ namespace eosiosystem {
          type_table__f3sf5vtxo      _f3sf5vtxo;
          type_table__f3voters       _f3voters;
          type_table__sc5voters      _sc5voters;
+         type_table__p3sf5prods     _p3sf5prods;
+         type_table__p3sf5vtxo      _p3sf5vtxo;
+         type_table__p3voters       _p3voters;
          type_table__rewards4bp     _rewards4bp;
          type_table__rewards4v      _rewards4v;
+         type_table__year3rewards   _year3rewards;
 
          voters_table            _voters;
          producers_table         _producers;

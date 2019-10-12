@@ -3,6 +3,9 @@
 
 namespace eosiosystem {
 
+    static const uint64_t COIN = 100000000;
+    static const uint32_t WEEK_SEC = 1000;//7*86400 604800 XJTODO
+
    //######################################################
    ////////////////////////////////////////////////////////
    //common data type
@@ -108,7 +111,8 @@ namespace eosiosystem {
     */
    struct sfreginfo {
       public_key        sc_pubkey;
-      uint8_t           dvdratio;   //int: [0,100],XJTODO,update dvdratio need update p3sf5
+      uint8_t           dvdratio;   //int: [0,100]
+      uint16_t          location;
 
       void print() const
       {
@@ -118,7 +122,93 @@ namespace eosiosystem {
          // eosio::print("[struct sfreginfo]end of obj\n");
       }
 
-      EOSLIB_SERIALIZE( sfreginfo, (sc_pubkey)(dvdratio) )
+      EOSLIB_SERIALIZE( sfreginfo, (sc_pubkey)(dvdratio)(location) )
+   };
+
+   /**
+    * sfupdinfo: update-dvdration-info, submitted by safe-chain
+    * @details
+    * - `has__dvdratio` whether udpate dvdration
+    * - `dvdratio` bp's dividend percent, [0,100]
+    * - `has__location` whethe update location
+    * - `location` ISO 3166 Country Code
+    */
+   struct sfupdinfo {
+       bool         has__dvdratio;
+       uint8_t      dvdratio;   //int: [0,100]
+       bool         has__location;
+       uint16_t     location;
+
+       EOSLIB_SERIALIZE( sfupdinfo, (has__dvdratio)(dvdratio)(has__location)(location) )
+   };
+
+   /**
+    * totals_pay: totals pay of every schedule,by safecode-chain
+    * @details
+    * - `total_bpay` total block pay
+    * - `total_vpay` total vote pay
+    * - `total_prod_bpay_to_self` total producer block pay,after cal dvdratio,which pay to self
+    * - `total_prod_vpay_to_self` total producer vote pay,after cal dvdratio,which pay to self
+    * - `total_prod_pay_to_voters` total producer pay,after cal dvdratio,pay to voters who vote the producer
+    */
+   struct totals_pay {
+       double       total_bpay = 0.0;
+       double       total_vpay = 0.0;
+       double       total_prod_bpay_to_self = 0.0;
+       double       total_prod_vpay_to_self = 0.0;
+       double       total_prod_pay_to_voters = 0.0;
+
+       EOSLIB_SERIALIZE( totals_pay, (total_bpay)(total_vpay)(total_prod_bpay_to_self)(total_prod_vpay_to_self)(total_prod_pay_to_voters) )
+   };
+
+   /**
+    * prods_pay: producers pay,by safecode-chain
+    * @details
+    * - `owner` bp's safecode account
+    * - `sfaddr` bp's safe address
+    * - `prod_bpay` producer block pay
+    * - `prod_vpay` producer vote pay
+    * - `prod_total_pay` prod_bpay+prod_vpay
+    * - `prod_bpay_to_self` prod_bpay*(100-dvdratio)/100
+    * - `prod_vpay_to_self` prod_vpay*(100-dvdratio)/100
+    * - `prod_coinage` producer coin age
+    * - `unpaid_block` produce a block,unpaid block + 1
+    * - `dvdratio` bp's dividend percent, [0,100]
+    */
+   struct prods_pay {
+       name         owner;
+       sfaddress    sfaddr;
+       double       prod_bpay = 0.0;
+       double       prod_vpay = 0.0;
+       double       prod_total_pay = 0.0;
+       double       prod_bpay_to_self = 0.0;
+       double       prod_vpay_to_self = 0.0;
+       double       prod_pay_to_voters = 0.0;
+       double       prod_coinage = 0.0;
+       uint64_t     unpaid_block = 0;
+       uint8_t      dvdratio = 0;
+
+       EOSLIB_SERIALIZE( prods_pay, (owner)(sfaddr)(prod_bpay)(prod_vpay)(prod_total_pay)(prod_bpay_to_self)(prod_vpay_to_self)(prod_pay_to_voters)
+                         (prod_coinage)(unpaid_block)(dvdratio))
+   };
+
+   /**
+    * voters_pay: voters pay,by safecode-chain
+    * @details
+    * - `producer` vote which bp account
+    * - `vote_age` current block time - vote time
+    * - `vote_coinage` vote coin age
+    * - `voter_vpay` voter vote pay
+    */
+   struct voters_pay
+   {
+       voters_pay() {}
+       name     producer;
+       uint32_t vote_age = 0;
+       double   vote_coinage = 0.0;
+       double   voter_vpay = 0.0;
+
+       EOSLIB_SERIALIZE( voters_pay,(producer)(vote_age)(vote_coinage)(voter_vpay))
    };
 
    //######################################################
@@ -133,7 +223,7 @@ namespace eosiosystem {
     * - `ynr` year number, based from `global4vote.active_timestamp`
     * - `amount` per-block rewards, unit: 1E-8 (SAFE)
     */
-   struct [[eosio::contract("eosio.system")]] year3rewards {
+   struct [[eosio::table("year3rewards"),eosio::contract("eosio.system")]] year3rewards {
       uint8_t  ynr;
       uint64_t amount;
 
@@ -163,6 +253,7 @@ namespace eosiosystem {
     * - `sf_atom_id` record `sf5key.atomid`
     * - `sf_block_num` record `sf5key.next_block_num`
     * - `sf_tx_index` record `sf5key.next_tx_index`
+    * - `soft_trigger_calc_reward` no producer change trigger calculate reward
     */
    struct [[eosio::table("global4vote"),eosio::contract("eosio.system")]] global4vote {
       global4vote(){}
@@ -173,16 +264,20 @@ namespace eosiosystem {
       uint32_t    last_set_proposed_producers_timestamp;
       uint64_t    last_unpaid_rewards;
       uint32_t    last_unpaid_block;
-      uint32_t    last_claim_week;
+      uint32_t    last_claim_week;//XJTODO give value
       bool        last_top40bp_votes_change;
       uint32_t    sf_atom_id;
       uint32_t    sf_block_num;
       uint16_t    sf_tx_index;
+      bool        soft_trigger_calc_reward;
+      uint16_t    curr_prods_count;//XJTODO for test
+      std::string str_log;//XJTODO for some test
 
       // explicit serialization macro is not necessary, used here only to improve compilation time
       EOSLIB_SERIALIZE( global4vote, (last_sch_ver)(active_timestamp)(last_calc_rewards_timestamp)
          (last_set_proposed_producers_timestamp)(last_unpaid_rewards)(last_unpaid_block)
-         (last_claim_week)(last_top40bp_votes_change)(sf_atom_id)(sf_block_num)(sf_tx_index) )
+         (last_claim_week)(last_top40bp_votes_change)(sf_atom_id)(sf_block_num)(sf_tx_index)
+         (soft_trigger_calc_reward)(curr_prods_count)(str_log))
    };
    typedef eosio::singleton< "global4vote"_n, global4vote >   global4vote_singleton;
 
@@ -528,11 +623,17 @@ namespace eosiosystem {
          return (rptxokey.txid);
       }
 
+      uint64_t index_by_owner() const
+      {
+         return (owner.value);
+      }
+
       EOSLIB_SERIALIZE( p3sf5prods, (owner)(rptxokey)(dvdratio)(unpaid_block) )
    };
 
    typedef eosio::multi_index<"p3sf5prods"_n, p3sf5prods, 
-      indexed_by<"by3txid"_n, const_mem_fun<p3sf5prods, checksum256, &p3sf5prods::index_by_txid>>
+      indexed_by<"by3txid"_n, const_mem_fun<p3sf5prods, checksum256, &p3sf5prods::index_by_txid>>,
+      indexed_by<"by3owner"_n, const_mem_fun<p3sf5prods, uint64_t, &p3sf5prods::index_by_owner>>
    > type_table__p3sf5prods;
 
    ////////////////////////////////////////////////////////
