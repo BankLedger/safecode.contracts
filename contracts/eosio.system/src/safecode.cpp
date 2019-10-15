@@ -10,7 +10,7 @@ namespace eosiosystem {
     {
         global4vote ret;
         ret.last_sch_ver = 0;
-        ret.active_timestamp = 0;
+        ret.active_timestamp = 1571103531;//XJTODO,for test,need be set to 0;
         ret.last_calc_rewards_timestamp = 0;
         ret.last_set_proposed_producers_timestamp = 0;
         ret.last_unpaid_rewards = 0;
@@ -28,19 +28,19 @@ namespace eosiosystem {
 
    void system_contract::init_year_reward()
    {
-       auto itr = _year3rewards.find(1);
+       uint8_t ynr = 0;
+       auto itr = _year3rewards.find(ynr);
        if(itr != _year3rewards.end()){
            return;
        }
        std::vector<uint64_t> amount_vec={COIN,2*COIN};
-       uint8_t ynr = 0;
        for(auto itr = amount_vec.begin(); itr != amount_vec.end(); ++itr)
        {
-           ++ynr;
            _year3rewards.emplace(get_self(), [&]( auto& row ) {
                row.ynr = ynr;
                row.amount = *itr;
             });
+           ++ynr;
        }
    }
 
@@ -263,7 +263,6 @@ namespace eosiosystem {
        setnext(sfkey);
    }
 
-   //XJTODO test pre bind,test after bind
    void system_contract::sf5bindaccnt( const struct sf5key& sfkey, const struct sfaddress& sfaddr, const name& account )
    {
        require_auth(account);
@@ -277,10 +276,23 @@ namespace eosiosystem {
            row.account = account;
        });
 
-       //XJTODO,update rewards4v owner
+       auto rewards_addr_idx = _rewards4v.get_index<"by3sfaddr"_n>();
+       auto found_rewards_ret = findByUniqueIdx(rewards_addr_idx,eosio::sha256( sfaddr.str.c_str(), sfaddr.str.length() ));
+       auto found_rewards = std::get<0>(found_rewards_ret);
+       if(found_rewards)
+       {
+           auto itr = std::get<1>(found_rewards_ret);
+           rewards_addr_idx.modify(itr, get_self(), [&]( auto& row ) {
+               if(row.owner != account)
+               {
+                   row.owner = account;
+                   eosio::print("update rewards4v owner succ.");
+               }
+           });
+       }
 
        setnext(sfkey);
-       eosio::print("sf5bindaccnt:bind safe addr ",sfaddr.str," to account ",account,"\n");
+       eosio::print("sf5bindaccnt:bind safe addr ",sfaddr.str," to account ",account,".\n");
    }
 
    void system_contract::setnext( const struct sf5key& sfkey )
@@ -707,7 +719,7 @@ namespace eosiosystem {
                     last_top40bp_votes_change_tmp,",need_new_sch_prods:",need_new_sch_prods);
    }
 
-   void system_contract::record_block_rewards(const name& producer)
+   void system_contract::record_block_rewards(const name& producer,const uint32_t& block_time)
    {
        auto owner_idx = _p3sf5prods.get_index<"by3owner"_n>();
        auto found_ret = findByUniqueIdx(owner_idx,producer.value);
@@ -721,7 +733,8 @@ namespace eosiosystem {
                unpaid_block = row.unpaid_block;
            });
            _gstate4vote.last_unpaid_block += 1;
-           auto itr = _year3rewards.find(1);//XJTODO 1 should be calculate by seconds
+           auto ynr = (block_time - _gstate4vote.active_timestamp)/(3600*24*360);
+           auto itr = _year3rewards.find(ynr);
            if(itr != _year3rewards.end()){
                _gstate4vote.last_unpaid_rewards += itr->amount;
            }
@@ -783,14 +796,14 @@ namespace eosiosystem {
        }
    }
 
-   void system_contract::update_bpay_rewards(name owner,const double& bpay,const bool& reward_week_ret)
+   void system_contract::update_bpay_rewards(name owner,const double& bpay,const bool& reward_unclaimed_ret)
    {
        auto itr_rewards4bp = _rewards4bp.find(owner.value);
        if(itr_rewards4bp == _rewards4bp.end())
        {
            _rewards4bp.emplace(get_self(), [&]( auto& row ) {
                row.owner = owner;
-               if(reward_week_ret){
+               if(reward_unclaimed_ret){
                    row.period = 0;
                    row.unclaimed = bpay;
                }else{
@@ -801,7 +814,7 @@ namespace eosiosystem {
        {
            _rewards4bp.modify(itr_rewards4bp, get_self(), [&]( auto& row ) {
                row.period += bpay;
-               if(reward_week_ret)
+               if(reward_unclaimed_ret)
                {
                    row.unclaimed += row.period;
                    row.period = 0;
@@ -810,57 +823,106 @@ namespace eosiosystem {
        }
    }
 
-   void system_contract::update_vpay_rewards(name owner,const double& vpay,const bool& reward_week_ret,const bool& is_voter,const sfaddress& sfaddr)
+   void system_contract::update_vpay_rewards(name owner,const double& vpay,const bool& reward_unclaimed_ret,const vote_pay_type& vpay_type,const sfaddress& sfaddr)
    {
-       auto owner_idx = _rewards4v.get_index<"by3owner"_n>();
-       auto found_owner_ret = findByUniqueIdx(owner_idx,owner.value);
-       auto found_owner = std::get<0>(found_owner_ret);
-       auto found_account = true;
-       if(is_voter)
-       {
-           auto found_account_ret = findByUniqueIdx(_sfaddr2accnt.get_index<"by3account"_n>(),owner.value);
-           found_account = std::get<0>(found_account_ret);
-       }
 
-       if(!found_owner)
+       bool found_vote_rewards = false;
+       bool found_account = true;
+       if(vpay_type == vote_pay_type::type_sf_voter)
        {
-           //add new vote pay
-           _rewards4v.emplace(get_self(), [&]( auto& row ) {
-              row.prmrid = _rewards4v.available_primary_key();
-              row.sfaddr = sfaddr;
-              if(found_account){
-                  row.owner = owner;
-              }else{
-                  row.owner = name(0);
-              }
-
-              if(reward_week_ret)
-              {
-                  row.unclaimed = vpay;
-                  row.period = 0;
-              }else
-              {
-                  row.period = vpay;
-                  row.unclaimed = 0;
-              }
-           });
+           auto sfaddr_idx = _rewards4v.get_index<"by3sfaddr"_n>();
+           auto found_sfaddr_ret = findByUniqueIdx(sfaddr_idx,eosio::sha256( sfaddr.str.c_str(), sfaddr.str.length()));
+           found_vote_rewards = std::get<0>(found_sfaddr_ret);
+           found_account = false;
+           if(found_vote_rewards)
+           {
+               //update sf vote rewards
+               auto itr_rewards4v = std::get<1>(found_sfaddr_ret);
+               sfaddr_idx.modify(itr_rewards4v, get_self(), [&]( auto& row ) {
+                   row.period += vpay;
+                   if(reward_unclaimed_ret)
+                   {
+                       row.unclaimed += row.period;
+                       row.period = 0;
+                   }
+                   eosio::print("update sf voter:",sfaddr.str,".");
+               });
+               return;
+           }
        }else
        {
-           //update vote pay
-           auto itr_rewards4v = std::get<1>(found_owner_ret);
-           owner_idx.modify(itr_rewards4v, get_self(), [&]( auto& row ) {
-               row.period += vpay;
-               if(reward_week_ret)
-               {
-                   row.unclaimed += row.period;
-                   row.period = 0;
-               }
-           });
+           auto owner_idx = _rewards4v.get_index<"by3owner"_n>();
+           auto found_owner_ret = findByUniqueIdx(owner_idx,owner.value);
+           found_vote_rewards = std::get<0>(found_owner_ret);
+           if(found_vote_rewards)
+           {
+               //update prod or voter vote rewards
+               auto itr_rewards4v = std::get<1>(found_owner_ret);
+               owner_idx.modify(itr_rewards4v, get_self(), [&]( auto& row ) {
+                   row.period += vpay;
+                   if(reward_unclaimed_ret)
+                   {
+                       row.unclaimed += row.period;
+                       row.period = 0;
+                   }
+                   eosio::print("update sc voter:",owner,".");
+               });
+               return;
+           }
+           if(vpay_type == vote_pay_type::type_sc_voter)
+           {
+               auto found_account_ret = findByUniqueIdx(_sfaddr2accnt.get_index<"by3account"_n>(),owner.value);
+               found_account = std::get<0>(found_account_ret);
+           }
+       }
+
+       eosio::print("add voter:",(uint32_t)vpay_type,".");
+       //add new vote pay
+       _rewards4v.emplace(get_self(), [&]( auto& row ) {
+          row.prmrid = _rewards4v.available_primary_key();
+          row.sfaddr = sfaddr;
+          if(found_account){
+              row.owner = owner;
+          }else{
+              row.owner = name(0);
+          }
+
+          if(reward_unclaimed_ret)
+          {
+              row.unclaimed = vpay;
+              row.period = 0;
+          }else
+          {
+              row.period = vpay;
+              row.unclaimed = 0;
+          }
+       });
+   }
+
+   template<typename T>
+   void system_contract::calculate_voters_reward(T& sc_voters_pay_map,std::map<name,std::pair<double,double>>& pay_to_voters_map)
+   {
+       for( auto itr = sc_voters_pay_map.begin(); itr != sc_voters_pay_map.end(); ++itr )
+       {
+           voters_pay& voter_pay = itr->second;
+           if(pay_to_voters_map.count(voter_pay.producer)<=0)
+           {
+               eosio::print("calculate voters pay,producer:",voter_pay.producer," not found");
+               continue;
+           }
+           double prod_pay_to_voters = pay_to_voters_map[voter_pay.producer].first;
+           double prod_coinage = pay_to_voters_map[voter_pay.producer].second;
+           voter_pay.voter_vpay = 0.0;
+           if(prod_coinage>0){
+               voter_pay.voter_vpay = prod_pay_to_voters * voter_pay.vote_coinage / prod_coinage;
+           }
+           eosio::print("voter:",itr->first,":voter_vpay:",(uint64_t)voter_pay.voter_vpay/COIN,",vote_age:",voter_pay.vote_age,",vote_coinage:",
+                        (uint64_t)voter_pay.vote_coinage/COIN,",prod_coinage:",(uint64_t)prod_coinage/COIN,".");
        }
    }
 
-   void system_contract::calculate_rewards(const uint32_t& block_time,totals_pay& total_pay,std::map<txokey,prods_pay>& prods_bpay_map,
-                                           std::map<name,voters_pay>& voters_pay_map)
+   void system_contract::calculate_rewards(const uint32_t& block_time,totals_pay& total_pay,std::map<std::string,voters_pay>& sf_voters_pay_map
+                                           ,std::map<txokey,prods_pay>& prods_bpay_map,std::map<name,voters_pay>& sc_voters_pay_map)
    {
        //total block pay
        total_pay.total_bpay = _gstate4vote.last_unpaid_rewards * 0.25;
@@ -883,20 +945,26 @@ namespace eosiosystem {
            prod_pay.unpaid_block = itr->unpaid_block;
        }
 
-       //calculate prods coinage
+       //calculate prods and unbind sf_voters coinage
        double total_coinage=0.0;
        for( auto itr = _p3sf5vtxo.begin(); itr != _p3sf5vtxo.end(); ++itr )
        {
+           auto vote_time = itr->vote_tp.sec_since_epoch();
+           check(block_time>=vote_time,"error,vote_time bigger than block_time");
+           uint32_t vote_age = block_time-vote_time;
+           double coinage = vote_age*itr->vtotal;
            if(prods_bpay_map.count(itr->rptxokey)<=0){
                continue;
            }
-           auto vote_time = itr->vote_tp.sec_since_epoch();
-           check(block_time>=vote_time,"error,vote_time bigger than block_time");
-           double prod_coinage = (block_time-vote_time)*itr->vtotal;
-           auto& prod_pay = prods_bpay_map[itr->rptxokey];
-           prod_pay.prod_coinage += prod_coinage;
-           prod_pay.sfaddr = itr->sfaddr;
-           total_coinage += prod_coinage;
+           prods_pay& prod_pay = prods_bpay_map[itr->rptxokey];
+           prod_pay.prod_coinage += coinage;
+           //prod_pay.sfaddr = itr->sfaddr;
+           voters_pay& voter_pay = sf_voters_pay_map[itr->sfaddr.str];
+           voter_pay.producer = prod_pay.owner;
+           voter_pay.vote_coinage = coinage;
+           voter_pay.vote_age = vote_age;
+
+           total_coinage += coinage;
        }
 
        //calculate voters coinage
@@ -908,7 +976,7 @@ namespace eosiosystem {
            uint32_t vote_age = block_time-last_vote_time;
            double vote_coinage = vote_age*itr->vtotal;
            total_coinage += vote_coinage;
-           auto& voter_pay = voters_pay_map[itr->owner];
+           voters_pay& voter_pay = sc_voters_pay_map[itr->owner];
            voter_pay.producer = itr->producer;
            voter_pay.vote_coinage = vote_coinage;
            voter_pay.vote_age = vote_age;
@@ -949,29 +1017,16 @@ namespace eosiosystem {
                         ",pay_to_voters:",(uint64_t)prod_pay.prod_pay_to_voters/COIN,",dvdratio:",prod_pay.dvdratio,".");
        }
 
+       //calculate unbind voters pay
+       calculate_voters_reward(sf_voters_pay_map,pay_to_voters_map);
+
        //calculate voters pay
-       for( auto itr = voters_pay_map.begin(); itr != voters_pay_map.end(); ++itr )
-       {
-           voters_pay& voter_pay = itr->second;
-           if(pay_to_voters_map.count(voter_pay.producer)<=0)
-           {
-               eosio::print("calculate voters pay,producer:",voter_pay.producer," not found");
-               continue;
-           }
-           double prod_pay_to_voters = pay_to_voters_map[voter_pay.producer].first;
-           double prod_coinage = pay_to_voters_map[voter_pay.producer].second;
-           voter_pay.voter_vpay = 0.0;
-           if(prod_coinage>0){
-               voter_pay.voter_vpay = prod_pay_to_voters * voter_pay.vote_coinage / prod_coinage;
-           }
-           eosio::print(itr->first,":voter_vpay:",(uint64_t)voter_pay.voter_vpay/COIN,",vote_age:",voter_pay.vote_age,",vote_coinage:",
-                        (uint64_t)voter_pay.vote_coinage/COIN,",prod_coinage:",(uint64_t)prod_coinage/COIN,".");
-       }
+       calculate_voters_reward(sc_voters_pay_map,pay_to_voters_map);
 
        eosio::print(",total_coinage:",(uint64_t)total_coinage/COIN,".");
    }
 
-   void system_contract::update_prods_rewards(std::map<txokey,prods_pay>& prods_bpay_map,const bool& reward_week_ret,
+   void system_contract::update_prods_rewards(std::map<txokey,prods_pay>& prods_bpay_map,const bool& reward_unclaimed_ret,
                                               const totals_pay& total_pay)
    {
        uint32_t prods_bpay_size = prods_bpay_map.size(),prods_count = 0;
@@ -1007,17 +1062,48 @@ namespace eosiosystem {
                }
                check(prod_vpay_to_self>=0,"prod_vpay_to_self less than 0");
            }
-           update_bpay_rewards(prod_pay.owner,prod_bpay_to_self,reward_week_ret);
-           update_vpay_rewards(prod_pay.owner,prod_vpay_to_self,reward_week_ret,false,prod_pay.sfaddr);
+           update_bpay_rewards(prod_pay.owner,prod_bpay_to_self,reward_unclaimed_ret);
+           update_vpay_rewards(prod_pay.owner,prod_vpay_to_self,reward_unclaimed_ret,vote_pay_type::type_prod,prod_pay.sfaddr);
        }
    }
 
-   void system_contract::update_voters_rewards(const std::map<name,voters_pay>& voters_pay_map,const bool& reward_week_ret,
-                                               const totals_pay& total_pay)
+   void system_contract::update_sf_voters_rewards(const std::map<std::string,voters_pay>& sf_voters_pay_map,const bool& reward_unclaimed_ret,
+                          const totals_pay& total_pay)
    {
-       uint32_t voters_pay_size = voters_pay_map.size(),voters_count = 0;
+       uint32_t voters_pay_size = sf_voters_pay_map.size(),voters_count = 0;
        double tmp_prod_pay_to_voters = 0.0;
-       for( auto itr = voters_pay_map.begin(); itr != voters_pay_map.end(); ++itr )
+       for( auto itr = sf_voters_pay_map.begin(); itr != sf_voters_pay_map.end(); ++itr )
+       {
+           ++voters_count;
+           sfaddress sfaddr;
+           sfaddr.str = itr->first;
+           const voters_pay& voter_pay = itr->second;
+           double voter_vpay = 0.0;
+           if(voters_count<voters_pay_size)
+           {
+               tmp_prod_pay_to_voters += voter_pay.voter_vpay;
+               voter_vpay = voter_pay.voter_vpay;
+           }else
+           {
+               voter_vpay = total_pay.total_prod_pay_to_voters - tmp_prod_pay_to_voters;
+               if(negative_dvalue_equals_zero(voter_vpay)){
+                   voter_vpay = 0;
+               }
+               if(voter_vpay<0){
+                   eosio::print("total_prod_pay_to_voters:",total_pay.total_prod_pay_to_voters,",tmp_prod_pay_to_voters:",tmp_prod_pay_to_voters,
+                                ",voter_vpay:",voter_vpay);
+               }
+               check(voter_vpay>=0,"voter_vpay less than 0");
+           }
+           update_vpay_rewards(name(0),voter_vpay,reward_unclaimed_ret,vote_pay_type::type_sf_voter,sfaddr);
+       }
+   }
+
+   void system_contract::update_sc_voters_rewards(const std::map<name,voters_pay>& sc_voters_pay_map,const bool& reward_unclaimed_ret,const totals_pay& total_pay)
+   {
+       uint32_t voters_pay_size = sc_voters_pay_map.size(),voters_count = 0;
+       double tmp_prod_pay_to_voters = 0.0;
+       for( auto itr = sc_voters_pay_map.begin(); itr != sc_voters_pay_map.end(); ++itr )
        {
            ++voters_count;
            name owner = itr->first;
@@ -1039,7 +1125,7 @@ namespace eosiosystem {
                }
                check(voter_vpay>=0,"voter_vpay less than 0");
            }
-           update_vpay_rewards(owner,voter_vpay,reward_week_ret,true,sfaddress());
+           update_vpay_rewards(owner,voter_vpay,reward_unclaimed_ret,vote_pay_type::type_sc_voter,sfaddress());
        }
    }
 
@@ -1055,31 +1141,44 @@ namespace eosiosystem {
        }
        {
            //transfer total_bpay and total_vpay
-           eosio::token::transfer_action transfer_act{ token_account, { {get_self(), active_permission} } };
-           transfer_act.send( get_self(), bpay_account, asset(total_pay.total_bpay, core_symbol()), "fund per-block bucket" );
-           eosio::token::transfer_action transfer_act2{ token_account, { {get_self(), active_permission} } };
-           transfer_act2.send( get_self(), vpay_account, asset(total_pay.total_vpay, core_symbol()), "fund per-vote bucket" );
+           eosio::token::transfer_action transfer_vpay_act{ token_account, { {get_self(), active_permission} } };
+           transfer_vpay_act.send( get_self(), bpay_account, asset(total_pay.total_bpay, core_symbol()), "fund per-block bucket" );
+           eosio::token::transfer_action transfer_bpay_act{ token_account, { {get_self(), active_permission} } };
+           transfer_bpay_act.send( get_self(), vpay_account, asset(total_pay.total_vpay, core_symbol()), "fund per-vote bucket" );
        }
    }
 
    void system_contract::settlement_rewards(const uint32_t& schedule_version,const uint32_t& block_time,const bool& soft_trigger_calc_reward)
    {
-       eosio::print(" settlement_rewards ");
+       eosio::print(" settlement_rewards. ");
        bool sch_ver_ret = _gstate4vote.last_sch_ver != schedule_version;
        bool trigger_calc_ret = !soft_trigger_calc_reward&&_gstate4vote.soft_trigger_calc_reward;
-       bool reward_week_ret = _gstate4vote.last_calc_rewards_timestamp>0 && block_time - _gstate4vote.last_calc_rewards_timestamp > WEEK_SEC;
-       bool start_settlement = sch_ver_ret || trigger_calc_ret || reward_week_ret;
+       bool calc_rewards_ret = _gstate4vote.last_calc_rewards_timestamp>0 && block_time - _gstate4vote.last_calc_rewards_timestamp > WEEK_SEC;
+       bool reward_unclaimed_ret = false;
+       auto last_claim_week = (block_time - _gstate4vote.active_timestamp) / WEEK_SEC;
+       if(_gstate4vote.last_claim_week != last_claim_week)
+       {
+           if(last_claim_week<_gstate4vote.last_claim_week){
+               eosio::print("block_time:",block_time,",active_timestamp:",_gstate4vote.active_timestamp,".");
+           }
+           check(last_claim_week>=_gstate4vote.last_claim_week,"last_claim_week less than _gstate4vote.last_claim_week");
+           _gstate4vote.last_claim_week = last_claim_week;
+           reward_unclaimed_ret = true;
+       }
+
+       bool start_settlement = sch_ver_ret || trigger_calc_ret || calc_rewards_ret || reward_unclaimed_ret;
        if(!start_settlement){
            return;
        }
-       eosio::print("calculate pay,version_ret:",sch_ver_ret,",trigger_calc_ret:",trigger_calc_ret,",week_ret:",reward_week_ret,
-                    ",schedule_version:",schedule_version);
+       eosio::print("calculate pay,version_ret:",sch_ver_ret,",trigger_calc_ret:",trigger_calc_ret,",calc_rewards_ret:",reward_unclaimed_ret,
+                    ",reward_unclaimed_ret:",reward_unclaimed_ret,",schedule_version:",schedule_version);
 
        //1.calculate total,prods,voters rewards
+       std::map<std::string,voters_pay> sf_voters_pay_map;
        std::map<txokey,prods_pay> prods_bpay_map;
-       std::map<name,voters_pay> voters_pay_map;
+       std::map<name,voters_pay> sc_voters_pay_map;
        totals_pay total_pay;
-       calculate_rewards(block_time,total_pay,prods_bpay_map,voters_pay_map);
+       calculate_rewards(block_time,total_pay,sf_voters_pay_map,prods_bpay_map,sc_voters_pay_map);
 
        //2.clear p3sf5 tables
        clear_p3_tables();
@@ -1088,12 +1187,15 @@ namespace eosiosystem {
        copy_data_from_f3_to_p3();
 
        //4.update prods pay rewards
-       update_prods_rewards(prods_bpay_map,reward_week_ret,total_pay);
+       update_prods_rewards(prods_bpay_map,reward_unclaimed_ret,total_pay);
 
-       //5.update voter vote pay rewards
-       update_voters_rewards(voters_pay_map,reward_week_ret,total_pay);
+       //5.update sf_unbind voter vote pay rewards
+       update_sf_voters_rewards(sf_voters_pay_map,reward_unclaimed_ret,total_pay);
 
-       //6.issue and transfer pay
+       //6.update voter vote pay rewards
+       update_sc_voters_rewards(sc_voters_pay_map,reward_unclaimed_ret,total_pay);
+
+       //7.issue and transfer pay
        transfer_pay(total_pay);
 
        _gstate4vote.last_sch_ver = schedule_version;
@@ -1107,11 +1209,11 @@ namespace eosiosystem {
    void system_contract::update_p3sf5(const uint32_t& schedule_version,const uint32_t& block_time,const bool& soft_trigger_calc_reward,
                                       const name& producer)
    {
-       record_block_rewards(producer);
+       record_block_rewards(producer,block_time);
        settlement_rewards(schedule_version,block_time,soft_trigger_calc_reward);
    }
 
-   //XJTODO,just for test,debug
+   //XJTODO,for test,debug
    void system_contract::sc3onblock(const uint32_t& schedule_version)
    {
        uint32_t block_time = eosio::current_time_point().sec_since_epoch();

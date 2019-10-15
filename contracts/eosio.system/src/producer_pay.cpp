@@ -24,10 +24,8 @@ namespace eosiosystem {
       //sc onblock
       uint32_t block_time = timestamp.to_time_point().sec_since_epoch();
       bool soft_trigger_calc_reward = false;
-      update_s3sf5(block_time,soft_trigger_calc_reward);
-      record_block_rewards(producer);
-      settlement_rewards(schedule_version,block_time,soft_trigger_calc_reward);
-      //update_p3sf5(schedule_version,block_time,soft_trigger_calc_reward,producer);
+      update_s3sf5(block_time,soft_trigger_calc_reward);\
+      update_p3sf5(schedule_version,block_time,soft_trigger_calc_reward,producer);
 
       return;
 

@@ -4,7 +4,7 @@
 namespace eosiosystem {
 
     static const uint64_t COIN = 100000000;
-    static const uint32_t WEEK_SEC = 1000;//7*86400 604800 XJTODO
+    static const uint32_t WEEK_SEC = 1000;//XJTODO for test,need change to 7*86400 604800
 
    //######################################################
    ////////////////////////////////////////////////////////
@@ -25,6 +25,11 @@ namespace eosiosystem {
          eosio::print("[struct address]obj:\n");
          eosio::print("\tstr = "); eosio::print(str); eosio::print("\n");
          eosio::print("[struct address]end of obj\n");
+      }
+
+      bool operator < (const struct sfaddress& sfaddr) const
+      {
+          return str<sfaddr.str;
       }
 
       EOSLIB_SERIALIZE( sfaddress, (str) )
@@ -211,6 +216,12 @@ namespace eosiosystem {
        EOSLIB_SERIALIZE( voters_pay,(producer)(vote_age)(vote_coinage)(voter_vpay))
    };
 
+   enum vote_pay_type{
+      type_prod = 0,
+      type_sf_voter = 1,
+      type_sc_voter = 2
+   };
+
    //######################################################
    ////////////////////////////////////////////////////////
    //struct and table
@@ -264,7 +275,7 @@ namespace eosiosystem {
       uint32_t    last_set_proposed_producers_timestamp;
       uint64_t    last_unpaid_rewards;
       uint32_t    last_unpaid_block;
-      uint32_t    last_claim_week;//XJTODO give value
+      uint32_t    last_claim_week;
       bool        last_top40bp_votes_change;
       uint32_t    sf_atom_id;
       uint32_t    sf_block_num;
