@@ -4,6 +4,7 @@
 #include <eosio/eosio.hpp>
 
 #include <string>
+#include <vector>
 
 namespace eosiosystem {
    class system_contract;
@@ -12,6 +13,7 @@ namespace eosiosystem {
 namespace eosio {
 
    using std::string;
+   using std::vector;
 
    /**
     * @defgroup eosiotoken eosio.token
@@ -210,6 +212,13 @@ namespace eosio {
 
          void sub_balance( const name& owner, const asset& value );
          void add_balance( const name& owner, const asset& value, const name& ram_payer );
+
+         const static name ettfee_account;
+         const static asset ettfee;
+         void check_bccta_memo( const string& memo );
+         void collect_ettfee( const name& from, const name& ram_payer );
+         void des_asset( const asset&   quantity);
+         static vector<string> split(const string& s, const char t);
    };
    /** @}*/ // end of @defgroup eosiotoken eosio.token
 } /// namespace eosio
