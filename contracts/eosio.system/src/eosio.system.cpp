@@ -20,8 +20,12 @@ namespace eosiosystem {
     _f3sf5vtxo(get_self(), get_self().value),
     _f3voters(get_self(), get_self().value),
     _sc5voters(get_self(), get_self().value),
+    _p3sf5prods(get_self(), get_self().value),
+    _p3sf5vtxo(get_self(), get_self().value),
+    _p3voters(get_self(), get_self().value),
     _rewards4bp(get_self(), get_self().value),
     _rewards4v(get_self(), get_self().value),
+    _year3rewards(get_self(), get_self().value),
     _voters(get_self(), get_self().value),
     _producers(get_self(), get_self().value),
     _producers2(get_self(), get_self().value),
@@ -42,6 +46,7 @@ namespace eosiosystem {
       _gstate3 = _global3.exists() ? _global3.get() : eosio_global_state3{};
       _gstate4vote = _global4vote.exists() ? _global4vote.get() : get_default_global4vote();
       _gstate_sc5rewards = _sc5rewards.exists() ? _sc5rewards.get(): get_default_sc5rewards();
+      init_year_reward();
    }
 
    eosio_global_state system_contract::get_default_parameters() {
