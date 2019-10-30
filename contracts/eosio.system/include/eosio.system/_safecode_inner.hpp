@@ -57,7 +57,7 @@
       void sf5setnext( const struct sf5key& sfkey );
 
       [[eosio::action]]
-      void sf5pubkhash( const public_key& sc_pubkey );
+      void scpubkeyhash( const public_key& sc_pubkey );
 
 
       //######################################################
@@ -66,8 +66,8 @@
       ////////////////////////////////////////////////////////
       //######################################################
 
-      [[eosio::action]]
-      void resetg4vote();
+      // [[eosio::action]]
+      // void resetg4vote();
 
       [[eosio::action]]
       void regproducer2( const struct txokey& rptxokey, const name& account, const signature& newsig );
