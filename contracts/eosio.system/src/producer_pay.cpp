@@ -12,6 +12,10 @@ namespace eosiosystem {
 
       require_auth(get_self());
 
+      //sc onblock
+      updates3sf5();
+      return;
+
       block_timestamp timestamp;
       name producer;
       _ds >> timestamp >> producer;

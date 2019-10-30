@@ -36,8 +36,20 @@ namespace eosiosystem {
    struct txokey {
       checksum256       txid;
       uint8_t           outidx;
-   
+
+      bool operator < (const struct txokey& another) const
+      {
+          if(txid==another.txid)
+            return outidx < another.outidx;
+          return txid < another.txid;
+      }
+
       EOSLIB_SERIALIZE( txokey, (txid)(outidx) )
+   };
+
+   enum txo_type{
+      type_mn = 0,
+      type_other = 1
    };
 
    /**
@@ -96,7 +108,7 @@ namespace eosiosystem {
     */
    struct sfreginfo {
       public_key        sc_pubkey;
-      uint8_t           dvdratio;   //int: [0,100]
+      uint8_t           dvdratio;   //int: [0,100],XJTODO,update dvdratio need update p3sf5
 
       void print() const
       {
@@ -143,6 +155,7 @@ namespace eosiosystem {
     * - `last_sch_ver` last block_header.schedule_version
     * - `active_timestamp` when mainnet is actived first time
     * - `last_calc_rewards_timestamp` when last calculating voting rewards
+    * - `last_set_proposed_producers_timestamp` when last set proposed producers
     * - `last_unpaid_rewards` per-block rewards, unit: 1E-8 (SAFE)
     * - `last_unpaid_block` amount of last unpaid block
     * - `last_claim_week` last claim week order number, based from `active_timestamp`
@@ -151,11 +164,13 @@ namespace eosiosystem {
     * - `sf_block_num` record `sf5key.next_block_num`
     * - `sf_tx_index` record `sf5key.next_tx_index`
     */
-   struct [[eosio::contract("eosio.system")]] global4vote {
+   struct [[eosio::table("global4vote"),eosio::contract("eosio.system")]] global4vote {
+      global4vote(){}
 
       uint32_t    last_sch_ver;
       uint32_t    active_timestamp;
       uint32_t    last_calc_rewards_timestamp;
+      uint32_t    last_set_proposed_producers_timestamp;
       uint64_t    last_unpaid_rewards;
       uint32_t    last_unpaid_block;
       uint32_t    last_claim_week;
@@ -166,8 +181,8 @@ namespace eosiosystem {
 
       // explicit serialization macro is not necessary, used here only to improve compilation time
       EOSLIB_SERIALIZE( global4vote, (last_sch_ver)(active_timestamp)(last_calc_rewards_timestamp)
-         (last_unpaid_rewards)(last_unpaid_block)(last_claim_week)(last_top40bp_votes_change)
-         (sf_atom_id)(sf_block_num)(sf_tx_index) )
+         (last_set_proposed_producers_timestamp)(last_unpaid_rewards)(last_unpaid_block)
+         (last_claim_week)(last_top40bp_votes_change)(sf_atom_id)(sf_block_num)(sf_tx_index) )
    };
    typedef eosio::singleton< "global4vote"_n, global4vote >   global4vote_singleton;
 
@@ -297,11 +312,22 @@ namespace eosiosystem {
          return (vtxo.key.outidx);
       }
 
+      checksum256 index_by_rptxid() const
+      {
+          return (rptxokey.txid);
+      }
+
+      uint8_t get_rptx_outidx() const
+      {
+          return (rptxokey.outidx);
+      }
+
       EOSLIB_SERIALIZE( sf5vtxo, (prmrid)(rptxokey)(vtxo)(vtotal) )
    };
 
    typedef eosio::multi_index<"sf5vtxo"_n, sf5vtxo, 
-      indexed_by<"by3txid"_n, const_mem_fun<sf5vtxo, checksum256, &sf5vtxo::index_by_txid>>
+      indexed_by<"by3txid"_n, const_mem_fun<sf5vtxo, checksum256, &sf5vtxo::index_by_txid>>,
+      indexed_by<"by3rptxid"_n, const_mem_fun<sf5vtxo, checksum256, &sf5vtxo::index_by_rptxid>>
    > type_table__sf5vtxo;
 
    ////////////////////////////////////////////////////////
@@ -370,11 +396,28 @@ namespace eosiosystem {
          return (rptxokey.txid);
       }
 
+      uint8_t get_tx_outidx() const
+      {
+         return (rptxokey.outidx);
+      }
+
+      uint64_t index_by_owner() const
+      {
+         return (owner.value);
+      }
+
+      double index_by_vtotal() const
+      {
+         return (vtotal);
+      }
+
       EOSLIB_SERIALIZE( f3sf5prods, (owner)(rptxokey)(dvdratio)(vtotal) )
    };
 
    typedef eosio::multi_index<"f3sf5prods"_n, f3sf5prods, 
-      indexed_by<"by3txid"_n, const_mem_fun<f3sf5prods, checksum256, &f3sf5prods::index_by_txid>>
+      indexed_by<"by3txid"_n, const_mem_fun<f3sf5prods, checksum256, &f3sf5prods::index_by_txid>>,
+      indexed_by<"by3owner"_n, const_mem_fun<f3sf5prods, uint64_t, &f3sf5prods::index_by_owner>>,
+      indexed_by<"by3vtotal"_n, const_mem_fun<f3sf5prods, double, &f3sf5prods::index_by_vtotal>>
    > type_table__f3sf5prods;
 
    ////////////////////////////////////////////////////////
@@ -576,7 +619,7 @@ namespace eosiosystem {
     * - `period` rewards within current period; unit: 1E-8 (SAFE)
     * - `unclaimed` unclaimed rewards from all periods; unit: 1E-8 (SAFE)
     */
-   struct [[eosio::contract("eosio.system")]] rewards4bp {
+   struct [[eosio::table, eosio::contract("eosio.system")]] rewards4bp {
       name              owner;
       uint64_t          period;
       uint64_t          unclaimed;
@@ -606,7 +649,7 @@ namespace eosiosystem {
     * for voter, before binding safecode-chain account, sfaddr="xxx" and owner=0
     * for voter, after binding safecode-chain account, sfaddr="xxx" and owner="vvv"_n
     */
-   struct [[eosio::contract("eosio.system")]] rewards4v {
+   struct [[eosio::table, eosio::contract("eosio.system")]] rewards4v {
       uint64_t          prmrid;
       sfaddress         sfaddr;
       name              owner;

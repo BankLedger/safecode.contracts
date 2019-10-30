@@ -26,7 +26,7 @@
        * 
        */
       [[eosio::action]]
-      void sf5regprod( const struct sf5key& sfkey, const struct txokey& rptxokey, const struct sfreginfo& ri, double sf_vtotal );
+      void sf5regprod( const struct sf5key& sfkey, const struct txokey& rptxokey, const struct sfreginfo& ri );
 
       [[eosio::action]]
       void sf5unregprod( const struct sf5key& sfkey, const struct txokey& rptxokey );
@@ -56,11 +56,18 @@
       [[eosio::action]]
       void sf5setnext( const struct sf5key& sfkey );
 
+      [[eosio::action]]
+      void sf5pubkhash( const public_key& sc_pubkey );
+
+
       //######################################################
       ////////////////////////////////////////////////////////
       //[[eosio::action]] called by safecode-side
       ////////////////////////////////////////////////////////
       //######################################################
+
+      [[eosio::action]]
+      void resetg4vote();
 
       [[eosio::action]]
       void regproducer2( const struct txokey& rptxokey, const name& account, const signature& newsig );
@@ -82,8 +89,25 @@
       [[eosio::action]]
       void checksign( const eosio::checksum256& digest, const eosio::signature& sig, const eosio::public_key& pubkey );
 
+      [[eosio::action]]
+      void sc3onblock();
+
    private:
       template< typename TableIndex >
       auto findByTxo( const TableIndex& tbl_index, const struct txokey& txokey );
 
+      template< typename TableIndex,typename Index>
+      auto findByUniqueIdx( const TableIndex& tbl_index, const Index& index );
+
+      bool dvalue_bigger_than_zero(const double& dvalue);
+
+      bool negative_dvalue_equals_zero(const double& dvalue);
+
+      void update_bp_votes(bool insert, const struct txokey& rptxokey,const double& votes,const struct txo& vtxo);
+
+      void setnext(const struct sf5key& sfkey);
+
+      void update_sc_elected_producers(const uint32_t& bp_count_max);
+
+      void updates3sf5();
 //};

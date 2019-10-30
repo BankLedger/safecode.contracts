@@ -16,12 +16,19 @@ namespace eosiosystem {
     _sf5vtxo(get_self(), get_self().value),
     _sfaddr2accnt(get_self(), get_self().value),
     _sf5producers(get_self(), get_self().value),
+    _f3sf5prods(get_self(), get_self().value),
+    _f3sf5vtxo(get_self(), get_self().value),
+    _f3voters(get_self(), get_self().value),
+    _sc5voters(get_self(), get_self().value),
+    _rewards4bp(get_self(), get_self().value),
+    _rewards4v(get_self(), get_self().value),
     _voters(get_self(), get_self().value),
     _producers(get_self(), get_self().value),
     _producers2(get_self(), get_self().value),
     _global(get_self(), get_self().value),
     _global2(get_self(), get_self().value),
     _global3(get_self(), get_self().value),
+    _global4vote(get_self(), get_self().value),
     _sc5rewards(get_self(), get_self().value),
     _rammarket(get_self(), get_self().value),
     _rexpool(get_self(), get_self().value),
@@ -33,6 +40,7 @@ namespace eosiosystem {
       _gstate  = _global.exists() ? _global.get() : get_default_parameters();
       _gstate2 = _global2.exists() ? _global2.get() : eosio_global_state2{};
       _gstate3 = _global3.exists() ? _global3.get() : eosio_global_state3{};
+      _gstate4vote = _global4vote.exists() ? _global4vote.get() : get_default_global4vote();
       _gstate_sc5rewards = _sc5rewards.exists() ? _sc5rewards.get(): get_default_sc5rewards();
    }
 
@@ -59,6 +67,7 @@ namespace eosiosystem {
       _global.set( _gstate, get_self() );
       _global2.set( _gstate2, get_self() );
       _global3.set( _gstate3, get_self() );
+      _global4vote.set (_gstate4vote, get_self() );
       _sc5rewards.set( _gstate_sc5rewards, get_self() );
    }
 
