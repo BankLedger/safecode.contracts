@@ -228,13 +228,17 @@ namespace eosiosystem {
 
    void system_contract::setnext( const struct sf5key& sfkey )
    {
-       //check ( sfkey.atom_id == _gstate4vote.sf_atom_id +1,"sf5setnext,atom_id is not equal global sf_atom_id"); //XJTODO,remove annote
-       ++_gstate4vote.sf_atom_id;
-       _gstate4vote.sf_block_num = sfkey.next_block_num;
-       _gstate4vote.sf_tx_index = sfkey.next_tx_index;
+        check( sfkey.atom_id == _gstate4vote.sf_atom_id, "sf5setnext,atom_id is not equal global sf_atom_id" );
 
-       eosio::print("sf5setnext:sf_atom_id:",_gstate4vote.sf_atom_id,",sf_block_num:",_gstate4vote.sf_block_num,",sf_tx_index:",_gstate4vote.sf_tx_index,";");
-   }
+        ++_gstate4vote.sf_atom_id;
+        _gstate4vote.sf_block_num = sfkey.next_block_num;
+        _gstate4vote.sf_tx_index = sfkey.next_tx_index;
+
+        DEBUG_PRINT_VAR( _gstate4vote.sf_atom_id );
+        DEBUG_PRINT_VAR( _gstate4vote.sf_block_num );
+        DEBUG_PRINT_VAR( _gstate4vote.sf_tx_index );
+        
+    }
 
    void system_contract::sf5setnext( const struct sf5key& sfkey )
    {
