@@ -86,7 +86,6 @@ namespace eosiosystem {
     {
         require_auth("safe.ssm"_n);
         setnext(sfkey);
-        DEBUG_PRINT_VAR(this->get_self());
 
         auto found_ret = findByTxo(_sf5producers.get_index<"by3txid"_n>(), rptxokey);
         auto found = std::get<0>(found_ret);
@@ -114,27 +113,29 @@ namespace eosiosystem {
         DEBUG_PRINT_VAR(rptxokey.outidx);
     }
 
-   void system_contract::sf5unregprod( const struct sf5key& sfkey, const struct txokey& rptxokey )
-   {
-       auto txid_idx = _sf5producers.get_index<"by3txid"_n>();
-       auto found_ret = findByTxo(txid_idx, rptxokey);
-       auto found = std::get<0>(found_ret);
-       check( found, "error, sf5unregprod:rptxo has not exists at table sf5producers" );
+    void system_contract::sf5unregprod( const struct sf5key& sfkey, const struct txokey& rptxokey )
+    {
+        require_auth("safe.ssm"_n);
+        setnext(sfkey);
 
-       auto itr = std::get<1>(found_ret);
-       txid_idx.modify(itr, get_self(), [&]( auto& row ) {
+        auto txid_idx = _sf5producers.get_index<"by3txid"_n>();
+        auto found_ret = findByTxo(txid_idx, rptxokey);
+        auto found = std::get<0>(found_ret);
+        check( found, "error, sf5unregprod:rptxo has not exists at table sf5producers" );
+
+        auto itr = std::get<1>(found_ret);
+        txid_idx.modify(itr, get_self(), [&]( auto& row ) {
             row.enable = false;
-       });
+        });
 
-       //unregprod top40,update flag
-       auto prods_txid_ret = findByTxo(_f3sf5prods.get_index<"by3txid"_n>(),rptxokey);
-       auto exists = std::get<0>(prods_txid_ret);
-       if(exists){
-           _gstate4vote.last_top40bp_votes_change = true;
-       }
+        //unregprod top40,update flag
+        auto prods_txid_ret = findByTxo(_f3sf5prods.get_index<"by3txid"_n>(),rptxokey);
+        auto top40_exists = std::get<0>(prods_txid_ret);
+        if( top40_exists ){ _gstate4vote.last_top40bp_votes_change = true; }
 
-       setnext(sfkey);
-       eosio::print("sf5unregprod:unregist bp:[",rptxokey.txid,",",rptxokey.outidx,"],top40:",exists,"\n");
+        DEBUG_PRINT_VAR(rptxokey.txid);
+        DEBUG_PRINT_VAR(rptxokey.outidx);
+        DEBUG_PRINT_VAR(top40_exists);
    }
 
    void system_contract::sf5updprodri(const struct sf5key& sfkey, const struct txokey& rptxokey, const struct sfupdinfo& updri)
@@ -350,19 +351,19 @@ namespace eosiosystem {
         //2.account need be unique
         auto account_found_ret = findByUniqueIdx(_sf5producers.get_index<"by3owner"_n>(),account.value);
         auto account_found = std::get<0>(account_found_ret);
-        check (account_found==false,"error, regproducer2:account has exists at table sf5producers");
+        check( account_found==false,"error, regproducer2:account has exists at table sf5producers" );
 
         //3.update owner
-        eosio::print("regproducer2:");
         auto itr = std::get<1>(found_ret);
         txid_idx.modify(itr, get_self(), [&]( auto& row ) {
-            eosio::print("pubkey ",row.index_by_pubkey(),".");
-            check(row.owner==name(0),"error,regproducer2:rptxo has alreay set owner");
-            checksign(row.index_by_pubkey(),newsig,row.ri.sc_pubkey);
+            check( row.owner==name(0), "error,regproducer2:rptxo has alreay set owner" );
+            checksign( row.index_by_pubkey(), newsig, row.ri.sc_pubkey );
             row.owner = account;
         });
 
-        eosio::print("bind rptxokey[",rptxokey.txid,",",rptxokey.outidx,"] with account ",account,"\n");
+        DEBUG_PRINT_VAR( rptxokey.txid );
+        DEBUG_PRINT_VAR( rptxokey.outidx );
+        DEBUG_PRINT_VAR( account );
     }
 
    void system_contract::sc5vote( const name& voter, const name& producer )
