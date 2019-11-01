@@ -136,40 +136,44 @@ namespace eosiosystem {
         DEBUG_PRINT_VAR(rptxokey.txid);
         DEBUG_PRINT_VAR(rptxokey.outidx);
         DEBUG_PRINT_VAR(top40_exists);
-   }
+    }
 
-   void system_contract::sf5updprodri(const struct sf5key& sfkey, const struct txokey& rptxokey, const struct sfupdinfo& updri)
-   {
-       auto txid_idx = _sf5producers.get_index<"by3txid"_n>();
-       auto found_ret = findByTxo(txid_idx, rptxokey);
-       auto found = std::get<0>(found_ret);
-       check( found, "error, sf5updprodri:rptxo has not exists at table sf5producers" );
-       check( updri.has__dvdratio || updri.has__location,"error,sf5updprodri:all flag is false,no need update");
-       check( updri.dvdratio >= 0 && updri.dvdratio <= 100, "error,sf5updprodri:ri.dvdratio must be in range [0, 100]" );
+    void system_contract::sf5updprodri(const struct sf5key& sfkey, const struct txokey& rptxokey, const struct sfupdinfo& updri)
+    {
+        require_auth("safe.ssm"_n);
+        setnext(sfkey);
 
-       //only dvdratio change,update last_top40bp_votes_change
-       auto itr = std::get<1>(found_ret);
-       txid_idx.modify(itr, get_self(), [&]( auto& row ) {
-           if(updri.has__dvdratio)
-           {
-               if(row.ri.dvdratio != updri.dvdratio)
-               {
-                   row.ri.dvdratio = updri.dvdratio;
-                   _gstate4vote.last_top40bp_votes_change = true;
-               }
-           }
-           if(updri.has__location)
-           {
-               if(row.ri.location != updri.location){
-                   row.ri.location = updri.location;
-               }
-           }
-       });
+        auto txid_idx = _sf5producers.get_index<"by3txid"_n>();
+        auto found_ret = findByTxo(txid_idx, rptxokey);
+        auto found = std::get<0>(found_ret);
+        check( found, "error, sf5updprodri:rptxo has not exists at table sf5producers" );
+        check( updri.has__dvdratio || updri.has__location,"error,sf5updprodri:all flag is false,no need update");
+        check( updri.dvdratio >= 0 && updri.dvdratio <= 100, "error,sf5updprodri:ri.dvdratio must be in range [0, 100]" );
 
-       setnext(sfkey);
-       eosio::print("sf5unregprod:update dvdration ",updri.has__dvdratio,",",updri.dvdratio,",location ",updri.has__location,","
-                    ,updri.location,",last_top40bp_votes_change:",_gstate4vote.last_top40bp_votes_change);
-   }
+        //only dvdratio change,update last_top40bp_votes_change
+        auto itr = std::get<1>(found_ret);
+        txid_idx.modify(itr, get_self(), [&]( auto& row ) {
+            if(updri.has__dvdratio)
+            {
+                if(row.ri.dvdratio != updri.dvdratio)
+                {
+                    row.ri.dvdratio = updri.dvdratio;
+                    _gstate4vote.last_top40bp_votes_change = true;
+                }
+            }
+            if(updri.has__location)
+            {
+                if(row.ri.location != updri.location){
+                    row.ri.location = updri.location;
+                }
+            }
+        });
+
+        DEBUG_PRINT_VAR(updri.has__dvdratio);
+        DEBUG_PRINT_VAR(updri.dvdratio);
+        DEBUG_PRINT_VAR(updri.has__location);
+        DEBUG_PRINT_VAR(updri.location);
+    }
 
    void system_contract::update_bp_votes(bool add, const struct txokey& rptxokey,const double& votes,const struct txo& vtxo)
    {
