@@ -467,34 +467,23 @@ namespace eosiosystem {
         }
     }
 
-   void system_contract::claim4vote( const name& voter )
-   {
+    void system_contract::claim4vote( const name& voter )
+    {
         require_auth(voter);
         auto owner_idx = _rewards4v.get_index<"by3owner"_n>();
         auto found_ret = findByUniqueIdx(owner_idx, voter.value);
         auto found = std::get<0>(found_ret);
         check( found, "error, claim4vote:voter has not exists at table rewards4v" );
 
-        auto unclaimed = 0;
-        auto period = 0;
         auto itr = std::get<1>(found_ret);
         owner_idx.modify(itr, get_self(), [&]( auto& row ) {
-            period = row.period;
-            if(row.unclaimed>0)
-            {
+            if(row.unclaimed>0) {
                 eosio::token::transfer_action transfer_act{ token_account, { {vpay_account, active_permission} } };
                 transfer_act.send( vpay_account, voter, asset(row.unclaimed, core_symbol()), "fund per-vote bucket" );
-                unclaimed = row.unclaimed;
                 row.unclaimed = 0;
-            }else
-            {
-                eosio::print("claim4vote:voter ",voter," has no unclaimed,the period is ",period,"\n");
             }
         });
-        if(unclaimed>0){
-            eosio::print("claim4vote:voter claim ",unclaimed,",the period is ",period,"\n");
-        }
-   }
+    }
 
    void system_contract::checksign( const eosio::checksum256& digest, const eosio::signature& sig, const eosio::public_key& pubkey )
    {
