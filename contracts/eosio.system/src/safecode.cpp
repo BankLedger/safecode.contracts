@@ -485,23 +485,23 @@ namespace eosiosystem {
         });
     }
 
-   void system_contract::checksign( const eosio::checksum256& digest, const eosio::signature& sig, const eosio::public_key& pubkey )
-   {
-      assert_recover_key( digest, sig, pubkey );
-   }
+    void system_contract::checksign( const eosio::checksum256& digest, const eosio::signature& sig, const eosio::public_key& pubkey )
+    {
+        assert_recover_key( digest, sig, pubkey );
+    }
 
-   void system_contract::clear_f3_tables()
-   {
-       for( auto itr = _f3sf5prods.begin(); itr != _f3sf5prods.end(); ){
-           itr = _f3sf5prods.erase(itr);
-       }
-       for( auto itr = _f3sf5vtxo.begin(); itr != _f3sf5vtxo.end(); ){
-           itr = _f3sf5vtxo.erase(itr);
-       }
-       for( auto itr = _f3voters.begin(); itr != _f3voters.end(); ){
-           itr = _f3voters.erase(itr);
-       }
-   }
+    void system_contract::clear_f3_tables()
+    {
+        for( auto itr = _f3sf5prods.begin(); itr != _f3sf5prods.end(); ){
+            itr = _f3sf5prods.erase(itr);
+        }
+        for( auto itr = _f3sf5vtxo.begin(); itr != _f3sf5vtxo.end(); ){
+            itr = _f3sf5vtxo.erase(itr);
+        }
+        for( auto itr = _f3voters.begin(); itr != _f3voters.end(); ){
+            itr = _f3voters.erase(itr);
+        }
+    }
 
    void system_contract::copy_data_from_s3_to_p3(const uint32_t& reward_producer_count,std::map<double,eosio::producer_key>& sftop21_producers_map,
                                                  uint32_t& top40_producer_count)
