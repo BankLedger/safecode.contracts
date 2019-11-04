@@ -294,8 +294,8 @@ namespace eosiosystem {
         }
     }
 
-   void system_contract::setnext( const struct sf5key& sfkey )
-   {
+    void system_contract::setnext( const struct sf5key& sfkey )
+    {
         check( sfkey.atom_id == _gstate4vote.sf_atom_id, "sf5setnext,atom_id is not equal global sf_atom_id" );
 
         ++_gstate4vote.sf_atom_id;
@@ -305,13 +305,12 @@ namespace eosiosystem {
         DEBUG_PRINT_VAR( _gstate4vote.sf_atom_id );
         DEBUG_PRINT_VAR( _gstate4vote.sf_block_num );
         DEBUG_PRINT_VAR( _gstate4vote.sf_tx_index );
-
     }
 
-   void system_contract::sf5setnext( const struct sf5key& sfkey )
-   {
-       setnext(sfkey);
-   }
+    void system_contract::sf5setnext( const struct sf5key& sfkey )
+    {
+        setnext(sfkey);
+    }
 
 //    //XJTODO for test
 //    void system_contract::resetg4vote()
