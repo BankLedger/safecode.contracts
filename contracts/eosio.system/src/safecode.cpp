@@ -247,25 +247,26 @@ namespace eosiosystem {
         update_bp_votes(true,rptxokey,vtotal,vtxo);
     }
 
-   void system_contract::sf5unvote( const struct sf5key& sfkey, const struct txokey& vtxokey )
-   {
-       auto txid_idx = _sf5vtxo.get_index<"by3txid"_n>();
-       auto found_ret = findByTxo(txid_idx, vtxokey);
-       auto found = std::get<0>(found_ret);
-       check( found, "error,sf5unvote:vtxokey has not exists at table sf5vtxo" );
+    void system_contract::sf5unvote( const struct sf5key& sfkey, const struct txokey& vtxokey )
+    {
+        require_auth("safe.ssm"_n);
+        setnext(sfkey);
 
-       //1.delete safe vote info
-       auto itr = std::get<1>(found_ret);
-       struct txo vtxo = itr->vtxo;
-       double vtotal = itr->vtotal;
-       struct txokey rptxokey = itr->rptxokey;
-       txid_idx.erase(itr);
+        auto txid_idx = _sf5vtxo.get_index<"by3txid"_n>();
+        auto found_ret = findByTxo(txid_idx, vtxokey);
+        auto found = std::get<0>(found_ret);
+        check( found, "error,sf5unvote:vtxokey has not exists at table sf5vtxo" );
 
-       //2.update bp vote
-       update_bp_votes(false,rptxokey,vtotal,vtxo);
+        //1.delete safe vote info
+        auto itr = std::get<1>(found_ret);
+        struct txo vtxo = itr->vtxo;
+        double vtotal = itr->vtotal;
+        struct txokey rptxokey = itr->rptxokey;
+        txid_idx.erase(itr);
 
-       setnext(sfkey);
-   }
+        //2.update bp vote
+        update_bp_votes(false,rptxokey,vtotal,vtxo);
+    }
 
    void system_contract::sf5bindaccnt( const struct sf5key& sfkey, const struct sfaddress& sfaddr, const name& account )
    {
