@@ -391,7 +391,7 @@ namespace eosiosystem {
             add_vote = false;
             _sc5voters.modify(itr, get_self(), [&]( auto& row ) {
                 last_producer = row.producer;
-                //XJTODO,first stake 100,then vote,finally add new stake 100,may be add a undo_staked
+                //scene: first stake 100,then vote,finally add new stake 100,may be add a undo_staked
                 last_staked = row.staked;
                 if(row.staked != curr_staked || last_producer!=producer) {
                     row.vote_tp = eosio::current_time_point();
@@ -1194,7 +1194,6 @@ namespace eosiosystem {
        settlement_rewards(schedule_version,block_time,soft_trigger_calc_reward);
    }
 
-   //XJTODO,for test,debug
    void system_contract::sc3onblock(const uint32_t& schedule_version)
    {
        uint32_t block_time = eosio::current_time_point().sec_since_epoch();
@@ -1203,7 +1202,5 @@ namespace eosiosystem {
        eosio::name producer{"bp1"_n};
        update_p3sf5(schedule_version,block_time,soft_trigger_calc_reward,producer);
    }
-
-
 
 } /// namespace eosiosystem

@@ -83,14 +83,20 @@
       ////////////////////////////////////////////////////////
       //######################################################
 
-      // [[eosio::action]]
-      // void resetg4vote();
-
       [[eosio::action]]
       void scpubkeyhash( const public_key& sc_pubkey );
 
       [[eosio::action]]
       void checksign( const eosio::checksum256& digest, const eosio::signature& sig, const eosio::public_key& pubkey );
+
+      //######################################################
+      ////////////////////////////////////////////////////////
+      //[[eosio::action]] debug,test
+      ////////////////////////////////////////////////////////
+      //######################################################
+
+      // [[eosio::action]]
+      // void resetg4vote();
 
       [[eosio::action]]
       void sc3onblock(const uint32_t& schedule_version);
