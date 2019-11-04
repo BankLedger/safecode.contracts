@@ -358,131 +358,114 @@ namespace eosiosystem {
         DEBUG_PRINT_VAR( account );
     }
 
-   void system_contract::sc5vote( const name& voter, const name& producer )
-   {
-       //1.check producer exists
-       require_auth(voter);
-       auto owner_idx = _sf5producers.get_index<"by3owner"_n>();
-       auto found_ret = findByUniqueIdx(owner_idx,producer.value);
-       auto found = std::get<0>(found_ret);
-       check( found, ( "error,sc5vote:producer " + producer.to_string() + " is not registered" ).data() );
+    void system_contract::sc5vote( const name& voter, const name& producer )
+    {
+        //1.check producer exists
+        require_auth(voter);
+        auto owner_idx = _sf5producers.get_index<"by3owner"_n>();
+        auto found_ret = findByUniqueIdx(owner_idx,producer.value);
+        auto found = std::get<0>(found_ret);
+        check( found, ( "error,sc5vote:producer " + producer.to_string() + " is not registered" ).data() );
 
-       int64_t curr_staked = 60000000000;
+        //action!!! read from eosio.system::stack cpu/net
+        int64_t curr_staked = 60000000000;
 
-       bool add_vote = true;
-       bool repeat_vote = true;
-       int64_t last_staked = 0;
-       double last_producer_vtotal = 0.0,curr_producer_vtotal = 0.0;
-       name last_producer = name(0);
-       auto itr = _sc5voters.find(voter.value);
-       if(itr == _sc5voters.end())
-       {
-           //2.add new vote
-           _sc5voters.emplace(get_self(), [&]( auto& row ) {
-               row.owner = voter;
-               row.producer = producer;
-               row.vote_tp = eosio::current_time_point();
-               row.staked = curr_staked;
-               row.vtotal = curr_staked;
-           });
-           repeat_vote = false;
-       }else
-       {
-           //3.update vote
-           add_vote = false;
-           _sc5voters.modify(itr, get_self(), [&]( auto& row ) {
-               last_producer = row.producer;
-               //XJTODO,first stake 100,then vote,finally add new stake 100,may be add a undo_staked
-               last_staked = row.staked;
-               if(row.staked != curr_staked || last_producer!=producer)
-               {
-                   row.vote_tp = eosio::current_time_point();
-                   row.staked = curr_staked;
-                   row.producer = producer;
-                   repeat_vote = false;
-               }
-           });
+        bool add_vote = true;
+        bool repeat_vote = true;
+        int64_t last_staked = 0;
+        double last_producer_vtotal = 0.0,curr_producer_vtotal = 0.0;
+        name last_producer = name(0);
+        auto itr = _sc5voters.find(voter.value);
+        if(itr == _sc5voters.end()) {
+            //2.add new vote
+            _sc5voters.emplace(get_self(), [&]( auto& row ) {
+                row.owner = voter;
+                row.producer = producer;
+                row.vote_tp = eosio::current_time_point();
+                row.staked = curr_staked;
+                row.vtotal = curr_staked;
+            });
+            repeat_vote = false;
+        } else {
+            //3.update vote
+            add_vote = false;
+            _sc5voters.modify(itr, get_self(), [&]( auto& row ) {
+                last_producer = row.producer;
+                //XJTODO,first stake 100,then vote,finally add new stake 100,may be add a undo_staked
+                last_staked = row.staked;
+                if(row.staked != curr_staked || last_producer!=producer) {
+                    row.vote_tp = eosio::current_time_point();
+                    row.staked = curr_staked;
+                    row.producer = producer;
+                    repeat_vote = false;
+                }
+            });
 
-           //4.old_producer sub old_stake
-           if(last_producer!=producer)
-           {
-               auto last_owner_idx = _sf5producers.get_index<"by3owner"_n>();
-               auto last_found_ret = findByUniqueIdx(last_owner_idx,last_producer.value);
-               auto last_found = std::get<0>(last_found_ret);
-               check( last_found, ( "error,sc5vote:last producer "+last_producer.to_string()+" is not registered" ).data());
-               auto itr_owner = std::get<1>(last_found_ret);
-               last_owner_idx.modify(itr_owner, get_self(), [&]( auto& row ) {
-                   check(row.vtotal>=last_staked,("error,sc5vote:vtotal less than last_staked,last producer:"+last_producer.to_string()).data());
-                   row.vtotal -= last_staked;
-                   last_producer_vtotal = row.vtotal;
-               });
-           }else
-           {
-               auto itr_owner = std::get<1>(found_ret);
-               owner_idx.modify(itr_owner, get_self(), [&]( auto& row ) {
-                   row.vtotal -= last_staked;
-                   if(negative_dvalue_equals_zero(row.vtotal)){
-                       row.vtotal = 0;
-                   }
-                   check(row.vtotal>=0,"row.sf_vtotal less than 0");
-                   last_producer_vtotal = row.vtotal;
-               });
-           }
+            //4.old_producer sub old_stake
+            if(last_producer!=producer) {
+                auto last_owner_idx = _sf5producers.get_index<"by3owner"_n>();
+                auto last_found_ret = findByUniqueIdx(last_owner_idx,last_producer.value);
+                auto last_found = std::get<0>(last_found_ret);
+                check( last_found, ( "error,sc5vote:last producer "+last_producer.to_string()+" is not registered" ).data());
+                auto itr_owner = std::get<1>(last_found_ret);
+                last_owner_idx.modify(itr_owner, get_self(), [&]( auto& row ) {
+                    check(row.vtotal>=last_staked,("error,sc5vote:vtotal less than last_staked,last producer:"+last_producer.to_string()).data());
+                    row.vtotal -= last_staked;
+                    last_producer_vtotal = row.vtotal;
+                });
+            } else {
+                auto itr_owner = std::get<1>(found_ret);
+                owner_idx.modify(itr_owner, get_self(), [&]( auto& row ) {
+                    row.vtotal -= last_staked;
+                    if(negative_dvalue_equals_zero(row.vtotal)){
+                        row.vtotal = 0;
+                    }
+                    check(row.vtotal>=0,"row.sf_vtotal less than 0");
+                    last_producer_vtotal = row.vtotal;
+                });
+            }
 
-           if(!_gstate4vote.last_top40bp_votes_change)
-           {
-               if(!repeat_vote&&
-                   (std::get<0>(findByUniqueIdx(_f3sf5prods.get_index<"by3owner"_n>(),last_producer.value))||
-                   std::get<0>(findByUniqueIdx(_f3sf5prods.get_index<"by3owner"_n>(),producer.value))))
-               {
-                   _gstate4vote.last_top40bp_votes_change = true;
-               }
-           }
-       }
+            if(!_gstate4vote.last_top40bp_votes_change) {
+                if(!repeat_vote && (
+                    std::get<0>(findByUniqueIdx(_f3sf5prods.get_index<"by3owner"_n>(),last_producer.value)) ||
+                    std::get<0>(findByUniqueIdx(_f3sf5prods.get_index<"by3owner"_n>(),producer.value)))
+                ){
+                    _gstate4vote.last_top40bp_votes_change = true;
+                }
+            }
+        }
 
-       //5.curr_producer add curr_stake
-       auto itr_owner = std::get<1>(found_ret);
-       owner_idx.modify(itr_owner, get_self(), [&]( auto& row ) {
-           row.vtotal += curr_staked;
-           curr_producer_vtotal = row.vtotal;
-       });
+        //5.curr_producer add curr_stake
+        auto itr_owner = std::get<1>(found_ret);
+        owner_idx.modify(itr_owner, get_self(), [&]( auto& row ) {
+            row.vtotal += curr_staked;
+            curr_producer_vtotal = row.vtotal;
+        });
 
-       eosio::print("sc5vote:",add_vote?"add vote":"update vote",",repeat_vote:",repeat_vote,",voter:",voter.to_string(),",last producer:",
-                    last_producer.to_string(),",last staked:",last_staked,",vtotal:",last_producer_vtotal,",new producer:",
-                    producer.to_string(),",new staked:",curr_staked,",vtotal:",curr_producer_vtotal,",last_top40bp_votes_change:",
-                    _gstate4vote.last_top40bp_votes_change,"\n");
-   }
+        eosio::print("sc5vote:",add_vote?"add vote":"update vote",",repeat_vote:",repeat_vote,",voter:",voter.to_string(),",last producer:",
+            last_producer.to_string(),",last staked:",last_staked,",vtotal:",last_producer_vtotal,",new producer:",
+            producer.to_string(),",new staked:",curr_staked,",vtotal:",curr_producer_vtotal,",last_top40bp_votes_change:",
+            _gstate4vote.last_top40bp_votes_change,"\n");
+    }
 
-   void system_contract::claim4prod( const name& producer )
-   {
+    void system_contract::claim4prod( const name& producer )
+    {
         require_auth(producer);
         auto found_ret = findByUniqueIdx(_sf5producers.get_index<"by3owner"_n>(),producer.value);
         auto found = std::get<0>(found_ret);
         check( found, ( "producer " + producer.to_string() + " is not registered" ).data() );
 
         auto itr = _rewards4bp.find(producer.value);
-        auto unclaimed = 0;
-        auto period = 0;
-        if(itr != _rewards4bp.end())
-        {
+        if(itr != _rewards4bp.end()) {
             eosio::token::transfer_action transfer_act{ token_account, { {bpay_account, active_permission} } };
             _rewards4bp.modify(itr, get_self(), [&]( auto& row ) {
-                period = row.period;
-                if(row.unclaimed>0)
-                {
+                if(row.unclaimed>0) {
                     transfer_act.send( bpay_account, producer, asset(row.unclaimed, core_symbol()), "fund per-block bucket" );
-                    unclaimed = row.unclaimed;
                     row.unclaimed = 0;
-                }else
-                {
-                    eosio::print("claim4prod:producer ",producer," has no unclaimed,the period is ",period,"\n");
                 }
             });
         }
-        if(unclaimed>0){
-            eosio::print("claim4prod:producer claim ",unclaimed,",the period is ",period,"\n");
-        }
-   }
+    }
 
    void system_contract::claim4vote( const name& voter )
    {
