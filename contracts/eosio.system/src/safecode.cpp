@@ -309,6 +309,7 @@ namespace eosiosystem {
 
     void system_contract::sf5setnext( const struct sf5key& sfkey )
     {
+        require_auth("safe.ssm"_n);
         setnext(sfkey);
     }
 
