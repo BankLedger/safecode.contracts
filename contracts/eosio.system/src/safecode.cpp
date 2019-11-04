@@ -175,85 +175,77 @@ namespace eosiosystem {
         DEBUG_PRINT_VAR(updri.location);
     }
 
-   void system_contract::update_bp_votes(bool add, const struct txokey& rptxokey,const double& votes,const struct txo& vtxo)
-   {
-       //1.update producer total vote,disabled bp also allow vote
-       auto txid_idx = _sf5producers.get_index<"by3txid"_n>();
-       auto found_txid_ret = findByTxo(txid_idx, rptxokey);
-       auto producer_found = std::get<0>(found_txid_ret);
-       check( producer_found, "error,update_bp_votes:rptxo has not exists at table sf5producers" );
+    void system_contract::update_bp_votes(bool add, const struct txokey& rptxokey,const double& votes,const struct txo& vtxo)
+    {
+        //1.update producer total vote,disabled bp also allow vote
+        auto txid_idx = _sf5producers.get_index<"by3txid"_n>();
+        auto found_txid_ret = findByTxo(txid_idx, rptxokey);
+        auto producer_found = std::get<0>(found_txid_ret);
+        check( producer_found, "error,update_bp_votes:rptxo has not exists at table sf5producers" );
 
-       auto itr = std::get<1>(found_txid_ret);
-       double producer_sf_vtotal = 0.0,producer_vtotal = 0.0;
-       txid_idx.modify(itr, get_self(), [&]( auto& row ) {
-           if(add)
-           {
-               row.sf_vtotal += votes;
-               row.vtotal += votes;
-           }else
-           {
-               row.sf_vtotal -= votes;
-               row.vtotal -= votes;
-               if(negative_dvalue_equals_zero(row.sf_vtotal)){
-                   row.sf_vtotal = 0;
-               }
-               if(negative_dvalue_equals_zero(row.vtotal)){
-                   row.vtotal = 0;
-               }
-               check(row.sf_vtotal>=0,"row.sf_vtotal less than 0");
-               check(row.vtotal>=0,"row.sf_vtotal less than 0");
-           }
-           producer_sf_vtotal = row.sf_vtotal;
-           producer_vtotal = row.vtotal;
-       });
+        auto itr = std::get<1>(found_txid_ret);
+        txid_idx.modify(itr, get_self(), [&]( auto& row ) {
+            if(add) {
+                row.sf_vtotal += votes;
+                row.vtotal += votes;
+            } else {
+                row.sf_vtotal -= votes;
+                row.vtotal -= votes;
+                if(negative_dvalue_equals_zero(row.sf_vtotal)) {
+                    row.sf_vtotal = 0;
+                }
+                if(negative_dvalue_equals_zero(row.vtotal)) {
+                    row.vtotal = 0;
+                }
+                check( row.sf_vtotal>=0,"row.sf_vtotal less than 0" );
+                check( row.vtotal>=0,"row.sf_vtotal less than 0" );
+            }
+        });
 
-       //2.bp exists in top40,then update flag
-       if(!_gstate4vote.last_top40bp_votes_change)
-       {
+        //2.bp exists in top40,then update flag
+        if(!_gstate4vote.last_top40bp_votes_change)
+        {
             auto prods_txid_ret = findByTxo(_f3sf5prods.get_index<"by3txid"_n>(),rptxokey);
             auto exists = std::get<0>(prods_txid_ret);
-            if(exists){
+            if(exists) {
                 _gstate4vote.last_top40bp_votes_change = true;
             }
-       }
+        }
+    }
 
-       eosio::print(add?"sf5vote":"sf5unvote"," [",rptxokey.txid,",",rptxokey.outidx,"],quantity:",vtxo.quantity,",type:",vtxo.type,
-                    ",votes:",votes,",sf_vtotal:",producer_sf_vtotal,",vtotal:",producer_vtotal,",last_top40bp_votes_change:",
-                    _gstate4vote.last_top40bp_votes_change,"\n");
-   }
+    void system_contract::sf5vote( const struct sf5key& sfkey, const struct txokey& rptxokey, const struct txo& vtxo )
+    {
+        require_auth("safe.ssm"_n);
+        setnext(sfkey);
 
-   void system_contract::sf5vote( const struct sf5key& sfkey, const struct txokey& rptxokey, const struct txo& vtxo )
-   {
-       auto found_ret = findByTxo(_sf5vtxo.get_index<"by3txid"_n>(), vtxo.key);
-       auto found = std::get<0>(found_ret);
-       check( found == false , "error,sf5vote:vtxo has exists at table sf5vtxo" );
-       check( vtxo.type >=txo_type::type_mn && vtxo.type <= txo_type::type_other,"error,sf5vote:vtxo.type must be in range [0,1]" );
-       check( vtxo.quantity.symbol == core_symbol(), "error,sf5vote:must use core symbol" );
-       check( vtxo.quantity.is_valid(), "error,sf5vote:invalid quantity" );
+        auto found_ret = findByTxo(_sf5vtxo.get_index<"by3txid"_n>(), vtxo.key);
+        auto found = std::get<0>(found_ret);
+        check( found == false , "error,sf5vote:vtxo has exists at table sf5vtxo" );
+        check( vtxo.type >=txo_type::type_mn && vtxo.type <= txo_type::type_other,"error,sf5vote:vtxo.type must be in range [0,1]" );
+        check( vtxo.quantity.symbol == core_symbol(), "error,sf5vote:must use core symbol" );
+        check( vtxo.quantity.is_valid(), "error,sf5vote:invalid quantity" );
 
-       //1.insert safe vote info
-       double vtotal = 0;
-       if(vtxo.type == txo_type::type_mn)
-       {
-           eosio::print("amount:",vtxo.quantity.amount);
-           check(vtxo.quantity.amount == 100000000000,"error,sf5vote:masternode vote amount must be 1000");
-           vtotal = vtxo.quantity.amount*1.5;
-       }else if(vtxo.type == txo_type::type_other){
-           vtotal = vtxo.quantity.amount;
-       }
+        //1.insert safe vote info
+        double vtotal = 0;
+        if(vtxo.type == txo_type::type_mn)
+        {
+            DEBUG_PRINT_VAR(vtxo.quantity.amount);
+            check( vtxo.quantity.amount == 1000'00000000,"error,sf5vote:masternode vote amount must be 1000" );
+            vtotal = vtxo.quantity.amount*1.5;
+        } else if(vtxo.type == txo_type::type_other) {
+            vtotal = vtxo.quantity.amount;
+        }
 
-       _sf5vtxo.emplace(get_self(), [&]( auto& row ) {
-          row.prmrid     = _sf5vtxo.available_primary_key();
-          row.rptxokey   = rptxokey;
-          row.vtxo       = vtxo;
-          row.vtotal     = vtotal;
-       });
+        _sf5vtxo.emplace(get_self(), [&]( auto& row ) {
+            row.prmrid     = _sf5vtxo.available_primary_key();
+            row.rptxokey   = rptxokey;
+            row.vtxo       = vtxo;
+            row.vtotal     = vtotal;
+        });
 
-       //2.update bp vote
-       update_bp_votes(true,rptxokey,vtotal,vtxo);
-
-       setnext(sfkey);
-   }
+        //2.update bp vote
+        update_bp_votes(true,rptxokey,vtotal,vtxo);
+    }
 
    void system_contract::sf5unvote( const struct sf5key& sfkey, const struct txokey& vtxokey )
    {
