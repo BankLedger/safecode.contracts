@@ -268,37 +268,31 @@ namespace eosiosystem {
         update_bp_votes(false,rptxokey,vtotal,vtxo);
     }
 
-   void system_contract::sf5bindaccnt( const struct sf5key& sfkey, const struct sfaddress& sfaddr, const name& account )
-   {
-       require_auth(account);
-       auto found_ret = findByUniqueIdx(_sfaddr2accnt.get_index<"by3sfaddr"_n>(),eosio::sha256( sfaddr.str.c_str(), sfaddr.str.length() ));
-       auto found = std::get<0>(found_ret);
-       check (found==false,("error, sf5bindaccnt:repeat bind,sfaddr " + sfaddr.str +" has exists at table sfaddr2accnt").data());
+    void system_contract::sf5bindaccnt( const struct sf5key& sfkey, const struct sfaddress& sfaddr, const name& account )
+    {
+        require_auth("safe.ssm"_n);
+        setnext(sfkey);
 
-       _sfaddr2accnt.emplace(get_self(), [&]( auto& row ) {
-           row.prmrid = _sfaddr2accnt.available_primary_key();
-           row.sfaddr = sfaddr;
-           row.account = account;
-       });
+        auto found_ret = findByUniqueIdx(_sfaddr2accnt.get_index<"by3sfaddr"_n>(), eosio::sha256( sfaddr.str.c_str(), sfaddr.str.length() ));
+        auto found = std::get<0>(found_ret);
+        check( found==false,("error, sf5bindaccnt:repeat bind,sfaddr " + sfaddr.str +" has exists at table sfaddr2accnt").data() );
 
-       auto rewards_addr_idx = _rewards4v.get_index<"by3sfaddr"_n>();
-       auto found_rewards_ret = findByUniqueIdx(rewards_addr_idx,eosio::sha256( sfaddr.str.c_str(), sfaddr.str.length() ));
-       auto found_rewards = std::get<0>(found_rewards_ret);
-       if(found_rewards)
-       {
-           auto itr = std::get<1>(found_rewards_ret);
-           rewards_addr_idx.modify(itr, get_self(), [&]( auto& row ) {
-               if(row.owner != account)
-               {
-                   row.owner = account;
-                   eosio::print("update rewards4v owner succ.");
-               }
-           });
-       }
+        _sfaddr2accnt.emplace(get_self(), [&]( auto& row ) {
+            row.prmrid = _sfaddr2accnt.available_primary_key();
+            row.sfaddr = sfaddr;
+            row.account = account;
+        });
 
-       setnext(sfkey);
-       eosio::print("sf5bindaccnt:bind safe addr ",sfaddr.str," to account ",account,".\n");
-   }
+        auto rewards_addr_idx = _rewards4v.get_index<"by3sfaddr"_n>();
+        auto found_rewards_ret = findByUniqueIdx(rewards_addr_idx,eosio::sha256( sfaddr.str.c_str(), sfaddr.str.length() ));
+        auto found_rewards = std::get<0>(found_rewards_ret);
+        if(found_rewards) {
+            auto itr = std::get<1>(found_rewards_ret);
+            rewards_addr_idx.modify(itr, get_self(), [&]( auto& row ) {
+                if(row.owner != account) { row.owner = account; }
+            });
+        }
+    }
 
    void system_contract::setnext( const struct sf5key& sfkey )
    {
