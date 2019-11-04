@@ -323,6 +323,7 @@ namespace eosiosystem {
 
     void system_contract::scpubkeyhash(const public_key& sc_pubkey)
     {
+        //action!!!
         //print result to caller, do not comment it!
         //cleos push action ... | grep 'eosio.system::scpubkeyhash>' | cut -d'>' -f2
         eosio::print("\n");
