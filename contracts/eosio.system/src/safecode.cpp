@@ -360,8 +360,13 @@ namespace eosiosystem {
 
     void system_contract::sc5vote( const name& voter, const name& producer )
     {
-        //1.check producer exists
         require_auth(voter);
+        __sc5vote(voter, producer);
+    }
+
+    void system_contract::__sc5vote( const name& voter, const name& producer )
+    {
+        //1.check producer exists
         auto owner_idx = _sf5producers.get_index<"by3owner"_n>();
         auto found_ret = findByUniqueIdx(owner_idx,producer.value);
         auto found = std::get<0>(found_ret);
@@ -402,6 +407,7 @@ namespace eosiosystem {
                 if(row.staked != curr_staked || last_producer!=producer) {
                     row.vote_tp = eosio::current_time_point();
                     row.staked = curr_staked;
+                    row.vtotal = curr_staked;
                     row.producer = producer;
                     repeat_vote = false;
                 }
@@ -1207,6 +1213,15 @@ namespace eosiosystem {
        update_s3sf5(block_time,soft_trigger_calc_reward);
        eosio::name producer{"bp1"_n};
        update_p3sf5(schedule_version,block_time,soft_trigger_calc_reward,producer);
+   }
+
+   void system_contract::revote_when_changebw( const name& voter )
+   {
+        auto itr = _sc5voters.find(voter.value);
+        if( itr==_sc5voters.end() ) { return; }
+        name producer = itr->producer;
+
+        __sc5vote(voter, producer);
    }
 
 } /// namespace eosiosystem

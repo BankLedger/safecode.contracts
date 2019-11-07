@@ -345,6 +345,7 @@ namespace eosiosystem {
 
       vote_stake_updater( from );
       update_voting_power( from, stake_net_delta + stake_cpu_delta );
+      revote_when_changebw( from );
    }
 
    void system_contract::update_voting_power( const name& voter, const asset& total_update )
@@ -392,8 +393,8 @@ namespace eosiosystem {
       check( unstake_cpu_quantity >= zero_asset, "must unstake a positive amount" );
       check( unstake_net_quantity >= zero_asset, "must unstake a positive amount" );
       check( unstake_cpu_quantity.amount + unstake_net_quantity.amount > 0, "must unstake a positive amount" );
-      check( _gstate.total_activated_stake >= min_activated_stake,
-             "cannot undelegate bandwidth until the chain is activated (at least 15% of all tokens participate in voting)" );
+      //check( _gstate.total_activated_stake >= min_activated_stake,
+      //       "cannot undelegate bandwidth until the chain is activated (at least 15% of all tokens participate in voting)" );
 
       changebw( from, receiver, -unstake_net_quantity, -unstake_cpu_quantity, false);
    } // undelegatebw
@@ -411,6 +412,5 @@ namespace eosiosystem {
       transfer_act.send( stake_account, req->owner, req->net_amount + req->cpu_amount, "unstake" );
       refunds_tbl.erase( req );
    }
-
 
 } //namespace eosiosystem

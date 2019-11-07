@@ -160,4 +160,7 @@
 
       void transfer_pay(const totals_pay& total_pay);
 
+      void __sc5vote( const name& voter, const name& producer );
+      void revote_when_changebw( const name& voter );
+
 //};
