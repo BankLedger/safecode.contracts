@@ -162,6 +162,9 @@ namespace eosiosystem {
    }
 
    void system_contract::voteproducer( const name& voter_name, const name& proxy, const std::vector<name>& producers ) {
+      check( false, "please use 'sc5vote' instead." );
+      return;
+      
       require_auth( voter_name );
       vote_stake_updater( voter_name );
       update_votes( voter_name, proxy, producers, true );

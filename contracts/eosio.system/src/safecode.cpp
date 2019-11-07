@@ -368,7 +368,13 @@ namespace eosiosystem {
         check( found, ( "error,sc5vote:producer " + producer.to_string() + " is not registered" ).data() );
 
         //action!!! read from eosio.system::stack cpu/net
-        int64_t curr_staked = 60000000000;
+        //int64_t curr_staked = 600'00000000;
+        int64_t curr_staked = 0;
+        {
+            auto voter_itr = _voters.find( voter.value );
+            check( voter_itr != _voters.end(), "user must stake before they can vote" ); /// staking creates voter object
+            curr_staked = voter_itr->staked;
+        }
 
         bool add_vote = true;
         bool repeat_vote = true;
