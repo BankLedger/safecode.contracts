@@ -624,7 +624,7 @@ namespace eosiosystem {
    {
        //3 240;5 360;21 900
        uint32_t wait_interval = _gstate4vote.curr_prods_count*3*12+30;//+150
-       wait_interval = 0;
+       //wait_interval = 0;   //for test only!!!
        if(block_time - _gstate4vote.last_set_proposed_producers_timestamp < wait_interval){
            return;
        }
